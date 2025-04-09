@@ -12,14 +12,13 @@ class HashtagController extends Controller
         return Hashtag::all();
     }
 
-    public function show($id)
+    public function show(Hashtag $hashtag)
     {
-        return Hashtag::with('posts')->findOrFail($id);
+        return $hashtag->load('posts');
     }
 
-    public function posts($id)
+    public function posts(Hashtag $hashtag)
     {
-        $hashtag = Hashtag::findOrFail($id);
         return $hashtag->posts;
     }
 }

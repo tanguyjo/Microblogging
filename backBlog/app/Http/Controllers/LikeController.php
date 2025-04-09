@@ -7,8 +7,20 @@ use Illuminate\Http\Request;
 
 class LikeController extends Controller
 {
-    public function index()
+    public function store(Request $request)
     {
-        return Like::with(['user', 'post'])->get();
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'post_id' => 'required|exists:posts,id',
+        ]);
+
+        $like = Like::firstOrCreate($validated);
+        return response()->json($like, 201);
+    }
+
+    public function destroy(Like $like)
+    {
+        $like->delete();
+        return response()->noContent();
     }
 }
