@@ -31,6 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('comments', CommentController::class)->only(['store', 'update', 'destroy']);
     Route::apiResource('likes', LikeController::class)->only(['store', 'destroy']);
     Route::apiResource('follows', FollowController::class)->only(['store', 'destroy']);
+    
+    // User profile routes
+    Route::get('/user', [UserController::class, 'profile']);
+    Route::put('/user', [UserController::class, 'update']);
 });
 
 // 🧪 Routes utiles supplémentaires (relations, custom endpoints)

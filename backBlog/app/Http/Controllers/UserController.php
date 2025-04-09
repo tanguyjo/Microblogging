@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -27,6 +28,42 @@ class UserController extends Controller
     public function following(User $user)
     {
         return $user->following()->with('followed')->get();
+    }
+
+    // GET /api/user (profile de l'utilisateur connecté)
+    public function profile()
+    {
+        $user = Auth::user();
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'bio' => $user->bio,
+            'avatar_url' => $user->avatar_url
+        ]);
+    }
+
+    // PUT /api/user (mise à jour du profil)
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+        
+        $validated = $request->validate([
+            'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
+            'bio' => 'nullable|string',
+            'avatar_url' => 'nullable|url'
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'bio' => $user->bio,
+            'avatar_url' => $user->avatar_url
+        ]);
     }
 }
 
