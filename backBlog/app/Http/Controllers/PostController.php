@@ -9,7 +9,7 @@ class PostController extends Controller
 {
     public function index()
     {
-        return Post::with(['user', 'hashtags'])->get();
+        return Post::all();
     }
 
     public function store(Request $request)
