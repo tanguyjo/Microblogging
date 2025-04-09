@@ -5,7 +5,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+vendor/
 .env
 .env.backup
 .env.production
@@ -21,3 +21,12 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+.DS_Store
+*.log
+*.sqlite
+*.sqlite-journal
+*.cache
+*.lock
+composer.phar
+package-lock.json
+yarn.lock
