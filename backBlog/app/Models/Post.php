@@ -2,16 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {
-    /** @use HasFactory<\Database\Factories\PostFactory> */
-    use HasFactory;
-
-    public function hashtags()
-    {
-        return $this->belongsToMany(Hashtag::class, 'post_hashtag')->withTimestamps();
-    }
+    protected $fillable = ['user_id', 'title', 'content', 'status', 'visibility'];
 }

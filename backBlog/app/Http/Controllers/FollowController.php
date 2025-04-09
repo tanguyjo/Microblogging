@@ -5,18 +5,52 @@ namespace App\Http\Controllers;
 use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FollowController extends Controller
 {
-    public function followers($userId)
+    // POST /api/follows
+    public function store(Request $request)
     {
-        $user = User::findOrFail($userId);
-        return $user->followers;
+        $request->validate([
+            'followed_id' => 'required|exists:users,id',
+        ]);
+
+        $followerId = Auth::id();
+        $followedId = $request->input('followed_id');
+
+        if ($followerId == $followedId) {
+            return response()->json(['error' => 'You cannot follow yourself.'], 422);
+        }
+
+        $follow = Follow::firstOrCreate([
+            'follower_id' => $followerId,
+            'followed_id' => $followedId,
+        ]);
+
+        return response()->json($follow, 201);
     }
 
-    public function following($userId)
+    // DELETE /api/follows/{follow}
+    public function destroy(Follow $follow)
     {
-        $user = User::findOrFail($userId);
-        return $user->following;
+        if ($follow->follower_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized.'], 403);
+        }
+
+        $follow->delete();
+        return response()->noContent();
+    }
+
+    // GET /api/users/{user}/followers
+    public function followers(User $user)
+    {
+        return $user->followers()->with('follower')->get();
+    }
+
+    // GET /api/users/{user}/following
+    public function following(User $user)
+    {
+        return $user->following()->with('followed')->get();
     }
 }

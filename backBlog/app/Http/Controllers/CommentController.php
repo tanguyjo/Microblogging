@@ -7,13 +7,27 @@ use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    public function index()
+    public function store(Request $request)
     {
-        return Comment::with(['user', 'post'])->get();
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'post_id' => 'required|exists:posts,id',
+            'content' => 'required|string',
+        ]);
+
+        $comment = Comment::create($validated);
+        return response()->json($comment, 201);
     }
 
-    public function show($id)
+    public function update(Request $request, Comment $comment)
     {
-        return Comment::with(['user', 'post'])->findOrFail($id);
+        $comment->update($request->all());
+        return response()->json($comment);
+    }
+
+    public function destroy(Comment $comment)
+    {
+        $comment->delete();
+        return response()->noContent();
     }
 }
