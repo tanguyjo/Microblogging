@@ -2,7 +2,7 @@
 import PostCard from "@/components/PostCard.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
-import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
+// import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
   id: number;
