@@ -2,6 +2,7 @@
   <div class="min-h-screen flex items-center justify-center bg-white px-6">
     <div class="w-full max-w-sm">
       <!-- Titre -->
+
       <h1 class="text-3xl font-bold text-black text-center">Welcome</h1>
       <p class="text-gray-500 text-center mt-1">Let's log you in quickly</p>
 
@@ -10,28 +11,35 @@
         {{ error }}
       </div>
 
+
       <!-- Formulaire -->
       <form @submit.prevent="handleLogin" class="mt-8 space-y-4">
         <input
           v-model="form.email"
           type="email"
           placeholder="Enter your email"
+
           class="w-full px-4 py-3 border border-purple-400 rounded-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
           required
+
         />
 
         <input
           v-model="form.password"
           type="password"
           placeholder="Enter your password"
+
           class="w-full px-4 py-3 border border-purple-400 rounded-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
           required
+
         />
 
         <button
           type="submit"
+
           class="w-full bg-purple-600 text-white font-bold py-3 rounded-sm hover:bg-purple-700 transition disabled:opacity-50"
           :disabled="loading"
+
         >
           {{ loading ? 'Loading...' : 'LOGIN' }}
         </button>
@@ -39,12 +47,14 @@
 
       <!-- Lien d'inscription -->
       <p class="text-sm text-black text-center mt-6">
+
         don't have an account?
+
         <RouterLink
           to="/signup"
-          class="text-purple-600 font-medium hover:underline"
+          class="text-darkviolet font-medium hover:underline"
         >
-          sign-up
+          Sign up
         </RouterLink>
       </p>
     </div>
