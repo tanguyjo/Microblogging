@@ -9,6 +9,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\HashtagController;
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,10 @@ use App\Http\Controllers\HashtagController;
 | Laravel préfixe automatiquement toutes ces routes par /api/
 |
 */
+
+// 🔐 Routes d'authentification
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 // 🔓 Routes publiques
 Route::apiResource('posts', PostController::class)->only(['index', 'show']);
@@ -39,6 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // 🧪 Routes utiles supplémentaires (relations, custom endpoints)
 Route::get('posts/{post}/hashtags', [PostController::class, 'hashtags']);
+Route::get('posts/{post}/comments', [PostController::class, 'comments']);
+Route::get('posts/{post}/likes', [PostController::class, 'likes']);
 Route::get('hashtags/{hashtag}/posts', [HashtagController::class, 'posts']);
 Route::get('users/{user}/followers', [FollowController::class, 'followers']);
 Route::get('users/{user}/following', [FollowController::class, 'following']);
