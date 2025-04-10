@@ -9,7 +9,14 @@ class Hashtag extends Model
 {
     /** @use HasFactory<\Database\Factories\HashtagFactory> */
     use HasFactory;
-        public function posts()
+
+    protected $fillable = [
+        'name',
+        'created_at',
+        'updated_at'
+    ];
+
+    public function posts()
     {
         return $this->belongsToMany(Post::class, 'post_hashtag')->withTimestamps();
     }
