@@ -7,6 +7,10 @@ export default {
         sans: "var(--font-sans)",
         title: "var(--font-title)",
       },
+      colors: {
+        violet: "#B583FF", // violet
+        darkviolet: "#9149FF", // violet foncé
+      },
     },
   },
   plugins: [],

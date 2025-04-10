@@ -27,6 +27,8 @@ a:hover {
 }
 
 body {
+  @apply text-black bg-white;
+  font-family: var(--font-sans);
   margin: 0;
   display: flex;
   place-items: center;
