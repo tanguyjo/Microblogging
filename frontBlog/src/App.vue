@@ -1,14 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <h1 class="text-3xl font-bold text-purple-600">Hello Tailwind 🎉</h1>
-      <h1 class="font-title text-3xl">Titre principal</h1>
-      <p class="font-sans text-sm">Texte courant</p>
-      <router-view />
-    </a>
-  </div>
+  <router-view />
 </template>
 
 <style scoped>
