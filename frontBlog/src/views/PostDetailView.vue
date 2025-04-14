@@ -4,40 +4,32 @@ import { useRoute } from "vue-router";
 import PostTitle from "@/components/PostTitle.vue";
 import PostStats from "@/components/PostStats.vue";
 import TagBadge from "@/components/TagBadge.vue";
+import CommentItem from "@/components/CommentItem.vue";
 
 const route = useRoute();
 const postId = Number(route.params.id);
-// Variables pour la gestion de l'état
+
 const post = ref<Post | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  bio: string;
+  avatar_url: string;
+  created_at: string;
+  updated_at: string;
+}
 
-// Pour l'exemple : on pourrait remplacer ça par un fetch API plus tard
-// const posts = [
-//   {
-//     id: 1,
-//     title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-//     content:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-//     date: "27/05/22",
-//     likes: 12,
-//     comments: 7,
-//     author: "samurai2099",
-//     tags: ["#mentalpeace", "#ludens"],
-//   },
-//   {
-//     id: 2,
-//     title: "The Death of Democracy.",
-//     content:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-//     date: "25/05/22",
-//     likes: 8,
-//     comments: 3,
-//     author: "anonymous",
-//     tags: ["#anarchy", "#silence"],
-//   },
-// ];
+interface CommentType {
+  id: number;
+  user: User;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface Post {
   id: number;
@@ -48,6 +40,11 @@ interface Post {
   visibility: string;
   created_at: string;
   updated_at: string;
+  user: User;
+  tags?: string[];
+  likes?: number;
+  comments?: number;
+  comments_data?: CommentType[];
 }
 
 onMounted(async () => {
@@ -56,17 +53,31 @@ onMounted(async () => {
     if (!response.ok) {
       throw new Error("Post not found");
     }
-    post.value = await response.json();
+    const postData = await response.json();
+    post.value = postData;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : "Une erreur est survenue.";
+    error.value =
+      err instanceof Error ? err.message : "Une erreur est survenue.";
   } finally {
     isLoading.value = false;
   }
 });
 
-const cleanDate = (date: string) => {
-  return date.replace(/(\.\d+|Z)$/, '').replace('T', ' ');
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
+
+function addNewComment(comment: CommentType) {
+  if (post.value) {
+    post.value.comments_data = [comment, ...(post.value.comments_data || [])];
+  }
+}
 </script>
 
 <template>
@@ -98,11 +109,8 @@ const cleanDate = (date: string) => {
       <PostTitle :title="post.title" class="mb-4 text-purple-600 text-2xl" />
 
       <!-- Date + auteur -->
-      <p class="text-sm text-gray-600 mb-2" v-if="post.author">
-        {{ post.date }} — @{{ post.author }}
-      </p>
-      <p class="text-sm text-gray-600 mb-2" v-else>
-        {{ post.date }}
+      <p class="text-sm text-gray-600 mb-2" v-if="post.user">
+        {{ formatDate(post.created_at) }} — @{{ post.user.username }}
       </p>
 
       <!-- Contenu -->
@@ -111,11 +119,36 @@ const cleanDate = (date: string) => {
       </p>
 
       <!-- Stats -->
-      <PostStats :likes="post.likes" :comments="post.comments" class="mb-4" />
+      <PostStats
+        :likes="post.likes || 0"
+        :comments="post.comments_data?.length || 0"
+        :post-id="post.id"
+        :on-comment-added="addNewComment"
+        class="mb-4"
+      />
 
       <!-- Tags -->
       <div class="mt-4 flex flex-wrap gap-2">
         <TagBadge v-for="tag in post.tags" :key="tag" :label="tag" />
+      </div>
+
+      <!-- Commentaires -->
+      <div class="mt-10">
+        <h2 class="text-xl font-bold text-purple-700 mb-4">
+          Commentaires ({{ post.comments_data?.length || 0 }})
+        </h2>
+        <div v-if="post.comments_data && post.comments_data.length">
+          <CommentItem
+            v-for="comment in post.comments_data"
+            :key="comment.id"
+            :comment="{
+              author: comment.user.username,
+              created_at: comment.created_at,
+              content: comment.content,
+            }"
+          />
+        </div>
+        <p v-else class="text-gray-500">Aucun commentaire pour ce post.</p>
       </div>
     </div>
 
