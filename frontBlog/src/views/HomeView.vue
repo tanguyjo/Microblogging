@@ -23,8 +23,29 @@ const posts = ref<Post[]>([]);
 // Récupération des posts depuis l'API
 onMounted(async () => {
   try {
+    console.log('Tentative de récupération des posts...');
     const response = await fetch("http://localhost:8000/api/posts");
-    posts.value = await response.json();
+    console.log('Réponse reçue:', response);
+    
+    const data = await response.json();
+    console.log('Données reçues:', data);
+    
+    // Transformer les données pour correspondre au format attendu par PostCard
+    posts.value = data.map((post: Post) => {
+      console.log('Traitement du post:', post);
+      return {
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        date: formatDateTime(post.created_at, 'short'),
+        likes: 0,
+        comments: 0,
+        author: post.author || '',
+        tags: [],
+      };
+    });
+    
+    console.log('Posts transformés:', posts.value);
   } catch (error) {
     console.error("Erreur de chargement :", error);
   }
@@ -75,16 +96,7 @@ function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): st
       <PostCard
         v-for="post in posts"
         :key="post.id"
-        :post="{
-          id: post.id,
-          title: post.title,
-          content: post.content,
-          date:post.created_at,
-          likes: 0,
-          comments: 0,
-          author: post.author,
-          tags: [],
-        }"
+        :post="post"
       />
     </main>
   </div>

@@ -15,7 +15,7 @@ const posts = [
     title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
     content:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "27/05/22",
+    date: "2022-05-27T00:00:00.000000Z",
     likes: 352,
     comments: 288,
     author: "",
@@ -26,7 +26,7 @@ const posts = [
     title: "Another Reflection On Digital Minimalism.",
     content:
       "Digital minimalism is a philosophy of technology use. Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-    date: "26/05/22",
+    date: "2022-05-26T00:00:00.000000Z",
     likes: 198,
     comments: 63,
     author: "",
