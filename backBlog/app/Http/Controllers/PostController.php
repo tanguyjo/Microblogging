@@ -10,23 +10,23 @@ class PostController extends Controller
 {
     public function index()
 {
-    $posts = Post::with('user:id,username')
-        ->withCount(['likes', 'comments'])
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'content' => $post->content,
-                'status' => $post->status,
-                'visibility' => $post->visibility,
-                'created_at' => $post->created_at,
-                'author' => $post->user->username ?? 'Unknown',
-                'likes' => $post->likes_count,
-                'comments' => $post->comments_count,
-            ];
-        });
+    $posts = Post::withCount(['likes', 'comments'])
+    ->with('user:id,username')
+    ->orderBy('created_at', 'desc')
+    ->get()
+    ->map(function ($post) {
+        return [
+            'id' => $post->id,
+            'title' => $post->title,
+            'content' => $post->content,
+            'status' => $post->status,
+            'visibility' => $post->visibility,
+            'created_at' => $post->created_at,
+            'author' => $post->user->username ?? 'Unknown',
+            'likes' => $post->likes_count,
+            'comments' => $post->comments_count,
+        ];
+    });
 
     return response()->json($posts);
 }
