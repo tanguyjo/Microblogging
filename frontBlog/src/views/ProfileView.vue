@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
+import axios from "axios";
 
+const router = useRouter();
 const activeTab = ref("posts");
 
 const posts = [
@@ -31,8 +34,40 @@ const posts = [
   },
 ];
 
-function logout() {
-  console.log("User logged out");
+async function logout() {
+  try {
+    const token = localStorage.getItem('token');
+    console.log('Token actuel:', token);
+
+    if (!token) {
+      console.error('Aucun token trouvé');
+      return;
+    }
+
+    const response = await axios.post('/api/logout', {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    console.log('Réponse de déconnexion:', response);
+    
+    // Supprimer le token et les informations utilisateur
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    console.log('Redirection vers la page de connexion...');
+    router.push('/login');
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Détails de l\'erreur:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+    }
+  }
 }
 </script>
 
@@ -169,7 +204,7 @@ function logout() {
           v-else-if="activeTab === 'following'"
           class="text-center text-gray-500 py-12"
         >
-          <p>You’re not following anyone yet.</p>
+          <p>You're not following anyone yet.</p>
         </div>
       </section>
     </main>
