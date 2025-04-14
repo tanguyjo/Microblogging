@@ -72,6 +72,12 @@ const formatDate = (date: string) => {
     minute: "2-digit",
   });
 };
+
+function addNewComment(comment: CommentType) {
+  if (post.value) {
+    post.value.comments_data = [comment, ...(post.value.comments_data || [])];
+  }
+}
 </script>
 
 <template>
@@ -113,7 +119,13 @@ const formatDate = (date: string) => {
       </p>
 
       <!-- Stats -->
-      <PostStats :likes="post.likes" :comments="post.comments" class="mb-4" />
+      <PostStats
+        :likes="post.likes || 0"
+        :comments="post.comments_data?.length || 0"
+        :post-id="post.id"
+        :on-comment-added="addNewComment"
+        class="mb-4"
+      />
 
       <!-- Tags -->
       <div class="mt-4 flex flex-wrap gap-2">
@@ -122,16 +134,21 @@ const formatDate = (date: string) => {
 
       <!-- Commentaires -->
       <div class="mt-10">
-        <h2 class="text-xl font-bold text-purple-700 mb-4">Commentaires</h2>
-        <CommentItem
-          v-for="comment in post.comments_data"
-          :key="comment.id"
-          :comment="{
-            author: comment.user.username,
-            created_at: comment.created_at,
-            content: comment.content,
-          }"
-        />
+        <h2 class="text-xl font-bold text-purple-700 mb-4">
+          Commentaires ({{ post.comments_data?.length || 0 }})
+        </h2>
+        <div v-if="post.comments_data && post.comments_data.length">
+          <CommentItem
+            v-for="comment in post.comments_data"
+            :key="comment.id"
+            :comment="{
+              author: comment.user.username,
+              created_at: comment.created_at,
+              content: comment.content,
+            }"
+          />
+        </div>
+        <p v-else class="text-gray-500">Aucun commentaire pour ce post.</p>
       </div>
     </div>
 

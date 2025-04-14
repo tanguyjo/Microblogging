@@ -76,8 +76,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const props = defineProps<{ likes: number; comments: number }>();
-const emit = defineEmits(["comment-added"]);
+const props = defineProps<{
+  likes: number;
+  comments: number;
+  postId: number;
+  onCommentAdded?: (comment: any) => void;
+}>();
 
 const liked = ref(false);
 const showPopup = ref(false);
@@ -87,12 +91,35 @@ function toggleLike() {
   liked.value = !liked.value;
 }
 
-function submitComment() {
-  if (commentText.value.trim()) {
-    console.log("Comment submitted:", commentText.value);
-    emit("comment-added");
+async function submitComment() {
+  const content = commentText.value.trim();
+  const token = localStorage.getItem("token");
+
+  if (!content || !token) return;
+
+  try {
+    const res = await fetch("http://localhost:8000/api/comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        post_id: props.postId,
+        content,
+      }),
+    });
+
+    if (!res.ok) throw new Error("Erreur lors de l'envoi du commentaire");
+
+    const newComment = await res.json();
+    if (props.onCommentAdded) props.onCommentAdded(newComment);
+
     commentText.value = "";
     showPopup.value = false;
+  } catch (err) {
+    console.error(err);
+    alert("Impossible d’envoyer le commentaire.");
   }
 }
 
