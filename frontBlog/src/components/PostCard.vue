@@ -17,6 +17,27 @@ defineProps<{
     tags: string[];
   };
 }>();
+
+function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
+  const date = new Date(dateString);
+
+  if (mode === 'short') {
+    return new Intl.DateTimeFormat('en-CA', {
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date).replace(',', '');
+}
+
 </script>
 
 <template>
@@ -25,12 +46,16 @@ defineProps<{
     <div
       class="hidden md:flex flex-col items-center w-24 text-sm text-gray-700 font-medium"
     >
-      <span class="text-2xl font-extrabold text-black leading-none">
-        {{ post.date.split("/")[0] }}
-      </span>
-      <span class="uppercase tracking-wide text-lg">
-        {{ post.date.split("/")[1] }}
-      </span>
+    <!-- Desktop only = short -->
+    <span class="hidden md:block text-sm text-gray-800">
+      {{ formatDateTime(post.date, 'short') }}
+    </span>
+
+    <!-- Mobile only = full -->
+    <span class="block md:hidden text-sm text-gray-600">
+      {{ formatDateTime(post.date, 'full') }}
+    </span>
+
       <span
         v-if="post.author && post.author.trim() !== ''"
         class="mt-6 -rotate-90 text-xs text-gray-500 font-light"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import PostTitle from "@/components/PostTitle.vue";
 import PostStats from "@/components/PostStats.vue";
@@ -6,34 +7,66 @@ import TagBadge from "@/components/TagBadge.vue";
 
 const route = useRoute();
 const postId = Number(route.params.id);
+// Variables pour la gestion de l'état
+const post = ref<Post | null>(null);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
-// Exemple statique (à remplacer plus tard par une API)
-const posts = [
-  {
-    id: 1,
-    title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-    content:
-      "Ut tellus elementum sagittis vitae et leo. Cursus in hac habitasse platea dictumst quisque sagittis purus. Odio facilisis mauris sit amet...",
-    date: "27/05/22",
-    likes: 12,
-    comments: 7,
-    author: "samurai2099",
-    tags: ["#mentalpeace", "#ludens"],
-  },
-  {
-    id: 2,
-    title: "The Death of Democracy.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "25/05/22",
-    likes: 8,
-    comments: 3,
-    author: "anonymous",
-    tags: ["#anarchy", "#silence"],
-  },
-];
 
-const post = posts.find((p) => p.id === postId);
+// Pour l'exemple : on pourrait remplacer ça par un fetch API plus tard
+// const posts = [
+//   {
+//     id: 1,
+//     title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
+//     content:
+//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
+//     date: "27/05/22",
+//     likes: 12,
+//     comments: 7,
+//     author: "samurai2099",
+//     tags: ["#mentalpeace", "#ludens"],
+//   },
+//   {
+//     id: 2,
+//     title: "The Death of Democracy.",
+//     content:
+//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
+//     date: "25/05/22",
+//     likes: 8,
+//     comments: 3,
+//     author: "anonymous",
+//     tags: ["#anarchy", "#silence"],
+//   },
+// ];
+
+interface Post {
+  id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  status: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+}
+
+onMounted(async () => {
+  try {
+    const response = await fetch(`http://localhost:8000/api/posts/${postId}`);
+    if (!response.ok) {
+      throw new Error("Post not found");
+    }
+    post.value = await response.json();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : "Une erreur est survenue.";
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+const cleanDate = (date: string) => {
+  return date.replace(/(\.\d+|Z)$/, '').replace('T', ' ');
+};
 </script>
 
 <template>

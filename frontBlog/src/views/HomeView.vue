@@ -2,46 +2,61 @@
 import PostCard from "@/components/PostCard.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
+
+import { ref, onMounted } from "vue";
 // import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
   id: number;
+  user_id: number;
   title: string;
   content: string;
-  date: string;
-  likes: number;
-  comments: number;
+  status: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
   author: string;
-  tags: string[];
+  
+}
+const posts = ref<Post[]>([]);
+
+// Récupération des posts depuis l'API
+onMounted(async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/posts");
+    posts.value = await response.json();
+  } catch (error) {
+    console.error("Erreur de chargement :", error);
+  }
+});
+
+console.log(posts); // Vérification de la récupération des posts
+
+function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
+  const date = new Date(dateString);
+
+  if (mode === 'short') {
+    return new Intl.DateTimeFormat('en-CA', {
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date).replace(',', '');
 }
 
-const posts: Post[] = [
-  {
-    id: 1,
-    title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-    content:
-      "Ut tellus elementum sagittis vitae et leo. Cursus in hac habitasse platea dictumst quisque sagittis purus. Odio facilisis mauris sit amet. Quis vel eros donec ac odio. Orci a scelerisque purus semper. Amet justo donec enim diam vulputate ut pharetra. Arcu odio ut sem nulla pharetra diam sit amet nisl. Sapien eget mi proin sed libero enim. Nunc sed blandit libero volutpat sed cras ornare arcu dui. Neque viverra justo nec ultrices dui sapien eget mi.",
-    date: "27/05/22",
-    likes: 12,
-    comments: 7,
-    author: "samurai2099",
-    tags: ["#mentalpeace", "#ludens"],
-  },
-  {
-    id: 2,
-    title: "The Death of Democracy.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Luctus venenatis lectus magna fringilla urna. Aliquet porttitor lacus luctus accumsan tortor posuere ac ut. Eleifend quam adipiscing vitae proin sagittis nisl rhoncus. Faucibus ornare suspendisse sed nisi lacus sed viverra tellus. Urna molestie at elementum eu facilisis sed odio morbi. Eget mi proin sed libero enim. Quis varius quam quisque id diam vel quam. Duis at tellus at urna condimentum mattis pellentesque. Nulla facilisi cras fermentum odio eu feugiat pretium nibh. Ut tellus elementum sagittis vitae et leo. Cursus in hac habitasse platea dictumst quisque sagittis purus. Odio facilisis mauris sit amet. Quis vel eros donec ac odio. Orci a scelerisque purus semper. Amet justo donec enim diam vulputate ut pharetra. Arcu odio ut sem nulla pharetra diam sit amet nisl. Sapien eget mi proin sed libero enim. Nunc sed blandit libero volutpat sed cras ornare arcu dui. Neque viverra justo nec ultrices dui sapien eget mi.",
-    date: "25/05/22",
-    likes: 8,
-    comments: 3,
-    author: "anonymous",
-    tags: ["#anarchy", "#silence"],
-  },
-];
 </script>
 
 <template>
+  
+
   <div class="md:flex">
     <!-- SideNav (Desktop uniquement) -->
     <SideNav class="hidden md:block w-20 shrink-0" />
@@ -61,9 +76,14 @@ const posts: Post[] = [
         v-for="post in posts"
         :key="post.id"
         :post="{
-          ...post,
-          preview: post.content.slice(0, 200),
-          postId: post.id,
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          date:post.created_at,
+          likes: 0,
+          comments: 0,
+          author: post.author,
+          tags: [],
         }"
       />
     </main>
