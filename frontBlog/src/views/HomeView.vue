@@ -2,46 +2,38 @@
 import PostCard from "@/components/PostCard.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
+import { ref, onMounted } from "vue";
 import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
   id: number;
+  user_id: number;
   title: string;
   content: string;
-  date: string;
-  likes: number;
-  comments: number;
-  author: string;
-  tags: string[];
+  status: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
 }
 
-const posts: Post[] = [
-  {
-    id: 1,
-    title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "27/05/22",
-    likes: 12,
-    comments: 7,
-    author: "samurai2099",
-    tags: ["#mentalpeace", "#ludens"],
-  },
-  {
-    id: 2,
-    title: "The Death of Democracy.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "25/05/22",
-    likes: 8,
-    comments: 3,
-    author: "anonymous",
-    tags: ["#anarchy", "#silence"],
-  },
-];
+const posts = ref<Post[]>([]);
+
+// Récupération des posts depuis l'API
+onMounted(async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/posts");
+    posts.value = await response.json();
+  } catch (error) {
+    console.error("Erreur de chargement :", error);
+  }
+});
+
+console.log(posts); // Vérification de la récupération des posts
 </script>
 
 <template>
+  
+
   <div class="md:flex">
     <!-- SideNav (Desktop uniquement) -->
     <SideNav class="hidden md:block w-20 shrink-0" />
@@ -61,9 +53,14 @@ const posts: Post[] = [
         v-for="post in posts"
         :key="post.id"
         :post="{
-          ...post,
-          preview: post.content.slice(0, 200),
-          postId: post.id,
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          date: post.created_at,
+          likes: 0,
+          comments: 0,
+          author: post.user_id,
+          tags: [],
         }"
       />
     </main>
