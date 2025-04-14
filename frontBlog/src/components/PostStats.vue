@@ -76,7 +76,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-defineProps<{ likes: number; comments: number }>();
+const props = defineProps<{ likes: number; comments: number }>();
+const emit = defineEmits(["comment-added"]);
 
 const liked = ref(false);
 const showPopup = ref(false);
@@ -89,6 +90,7 @@ function toggleLike() {
 function submitComment() {
   if (commentText.value.trim()) {
     console.log("Comment submitted:", commentText.value);
+    emit("comment-added");
     commentText.value = "";
     showPopup.value = false;
   }
