@@ -2,8 +2,11 @@
 import PostCard from "@/components/PostCard.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
+
 import { ref, onMounted } from "vue";
 import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
+
+// import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
   id: number;
@@ -15,7 +18,6 @@ interface Post {
   created_at: string;
   updated_at: string;
 }
-
 const posts = ref<Post[]>([]);
 
 // Récupération des posts depuis l'API
@@ -29,6 +31,7 @@ onMounted(async () => {
 });
 
 console.log(posts); // Vérification de la récupération des posts
+
 </script>
 
 <template>

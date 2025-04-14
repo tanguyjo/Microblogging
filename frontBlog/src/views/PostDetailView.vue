@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import PostTitle from "@/components/PostTitle.vue";
+import PostStats from "@/components/PostStats.vue";
+import TagBadge from "@/components/TagBadge.vue";
 
 const route = useRoute();
 const postId = Number(route.params.id);
@@ -68,6 +71,7 @@ const cleanDate = (date: string) => {
 
 <template>
   <div class="max-w-3xl mx-auto px-4 pt-8 pb-16">
+    <!-- Bouton retour -->
     <RouterLink
       to="/"
       class="flex items-center text-darkviolet hover:underline mb-6"
@@ -90,25 +94,28 @@ const cleanDate = (date: string) => {
     </RouterLink>
 
     <div v-if="post">
-      <h1 class="text-2xl font-bold text-purple-600 mb-4">{{ post.title }}</h1>
-      <p class="text-sm text-gray-600 mb-2">
-        {{ cleanDate(post.created_at) }} — @{{ post.user_id }}
+      <!-- Titre -->
+      <PostTitle :title="post.title" class="mb-4 text-purple-600 text-2xl" />
+
+      <!-- Date + auteur -->
+      <p class="text-sm text-gray-600 mb-2" v-if="post.author">
+        {{ post.date }} — @{{ post.author }}
       </p>
-      <p class="text-gray-800 leading-relaxed mb-4">{{ post.content }}</p>
+      <p class="text-sm text-gray-600 mb-2" v-else>
+        {{ post.date }}
+      </p>
 
-      <div class="flex gap-4 text-purple-600">
-        <span>♡ {{ post.likes || 0 }}</span>
-        <span>💬 {{ post.comments || 0}}</span>
-      </div>
+      <!-- Contenu -->
+      <p class="text-gray-800 leading-relaxed mb-4">
+        {{ post.content }}
+      </p>
 
+      <!-- Stats -->
+      <PostStats :likes="post.likes" :comments="post.comments" class="mb-4" />
+
+      <!-- Tags -->
       <div class="mt-4 flex flex-wrap gap-2">
-        <span
-          v-for="tag in post.tags"
-          :key="tag"
-          class="border border-purple-500 text-purple-600 px-2 py-1 text-sm rounded-full"
-        >
-          {{ tag }}
-        </span>
+        <TagBadge v-for="tag in post.tags" :key="tag" :label="tag" />
       </div>
     </div>
 

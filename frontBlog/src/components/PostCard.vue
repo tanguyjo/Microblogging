@@ -31,7 +31,10 @@ defineProps<{
       <span class="uppercase tracking-wide text-lg">
         {{ post.date.split("/")[1] }}
       </span>
-      <span class="mt-6 -rotate-90 text-xs text-gray-500 font-light">
+      <span
+        v-if="post.author && post.author.trim() !== ''"
+        class="mt-6 -rotate-90 text-xs text-gray-500 font-light"
+      >
         @{{ post.author }}
       </span>
     </div>
