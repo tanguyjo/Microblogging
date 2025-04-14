@@ -36,30 +36,42 @@ const posts = [
 
 async function logout() {
   try {
+    console.log('Début de la déconnexion...');
     const token = localStorage.getItem('token');
     console.log('Token actuel:', token);
 
     if (!token) {
       console.error('Aucun token trouvé');
+      // Même sans token, on redirige vers la page de login
+      localStorage.clear(); // On nettoie tout le localStorage par sécurité
+      router.push('/login');
       return;
     }
 
-    const response = await axios.post('/api/logout', {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    try {
+      console.log('Envoi de la requête de déconnexion...');
+      const response = await axios.post('/api/logout', {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log('Réponse de déconnexion:', response);
+    } catch (apiError) {
+      console.error('Erreur API lors de la déconnexion:', apiError);
+      // On continue le processus même si l'API échoue
+    }
     
-    console.log('Réponse de déconnexion:', response);
-    
-    // Supprimer le token et les informations utilisateur
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // Dans tous les cas, on nettoie le localStorage et on redirige
+    console.log('Nettoyage du localStorage...');
+    localStorage.clear(); // On nettoie tout le localStorage
     
     console.log('Redirection vers la page de connexion...');
-    router.push('/login');
+    await router.push('/login');
   } catch (error) {
-    console.error('Erreur lors de la déconnexion:', error);
+    console.error('Erreur globale lors de la déconnexion:', error);
     if (axios.isAxiosError(error)) {
       console.error('Détails de l\'erreur:', {
         status: error.response?.status,
@@ -67,6 +79,9 @@ async function logout() {
         headers: error.response?.headers
       });
     }
+    // Même en cas d'erreur, on essaie de rediriger
+    localStorage.clear();
+    router.push('/login');
   }
 }
 </script>
