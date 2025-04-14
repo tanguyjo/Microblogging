@@ -10,7 +10,22 @@ class PostController extends Controller
 {
     public function index()
     {
-        return Post::all();
+        $posts = Post::with('user:id,username') // On ne charge que l'id et le username de l'utilisateur
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'status' => $post->status,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'author' => $post->user->username ?? 'Unknown', // 💡 Ici tu récupères le username
+                ];
+            });
+    
+        return response()->json($posts);
     }
 
     public function store(Request $request)

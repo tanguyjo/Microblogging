@@ -4,8 +4,6 @@ import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 
 import { ref, onMounted } from "vue";
-import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
-
 // import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
@@ -17,6 +15,8 @@ interface Post {
   visibility: string;
   created_at: string;
   updated_at: string;
+  author: string;
+  
 }
 const posts = ref<Post[]>([]);
 
@@ -31,6 +31,26 @@ onMounted(async () => {
 });
 
 console.log(posts); // Vérification de la récupération des posts
+
+function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
+  const date = new Date(dateString);
+
+  if (mode === 'short') {
+    return new Intl.DateTimeFormat('en-CA', {
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date).replace(',', '');
+}
 
 </script>
 
@@ -59,10 +79,10 @@ console.log(posts); // Vérification de la récupération des posts
           id: post.id,
           title: post.title,
           content: post.content,
-          date: post.created_at,
+          date:post.created_at,
           likes: 0,
           comments: 0,
-          author: post.user_id,
+          author: post.author,
           tags: [],
         }"
       />
