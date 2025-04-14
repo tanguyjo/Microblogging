@@ -79,4 +79,11 @@ class PostController extends Controller
     {
         return $post->likes()->with('user')->get();
     }
+
+    public function userPosts($userId)
+    {
+        return Post::where('user_id', $userId)
+            ->with(['user', 'hashtags', 'comments'])
+            ->get();
+    }
 }

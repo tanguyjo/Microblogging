@@ -49,3 +49,4 @@ Route::get('posts/{post}/likes', [PostController::class, 'likes']);
 Route::get('hashtags/{hashtag}/posts', [HashtagController::class, 'posts']);
 Route::get('users/{user}/followers', [FollowController::class, 'followers']);
 Route::get('users/{user}/following', [FollowController::class, 'following']);
+Route::get('users/{user}/posts', [PostController::class, 'userPosts']);
