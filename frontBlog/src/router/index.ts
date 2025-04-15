@@ -5,43 +5,50 @@ import LoginView from "@/views/LoginView.vue";
 import SignUpView from "@/views/SignUpView.vue";
 import NewPostView from "@/views/NewPostView.vue";
 import ProfileView from "@/views/ProfileView.vue";
+import EditProfileView from "@/views/EditProfileView.vue";
 
 const routes = [
   {
     path: "/",
     name: "home",
     component: HomeView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: "/posts/:id",
     name: "PostDetail",
     component: PostDetailView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: "/login",
     name: "Login",
     component: LoginView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
     path: "/signup",
     name: "SignUp",
     component: SignUpView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
     path: "/newpost",
     name: "NewPost",
     component: NewPostView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: "/profile",
     name: "Profile",
     component: ProfileView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/edit-profile",
+    name: "EditProfile",
+    component: EditProfileView,
+    meta: { requiresAuth: true },
   },
   {
     path: "/profile/:username",
@@ -58,18 +65,18 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const token = localStorage.getItem("token");
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
   if (requiresAuth && !token) {
     // Rediriger vers la page de login si l'utilisateur n'est pas connecté
-    next({ name: 'Login' }); 
-  } else if (token && (to.name === 'Login' || to.name === 'SignUp')) {
+    next({ name: "Login" });
+  } else if (token && (to.name === "Login" || to.name === "SignUp")) {
     // Rediriger vers la page d'accueil si l'utilisateur est déjà connecté
-    next({ name: 'home' });
+    next({ name: "home" });
   } else {
     next();
   }
-}); 
+});
 
 export default router;
