@@ -1,31 +1,35 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 
-// Props
 const props = defineProps<{
   postId: number;
   likes: number;
   comments: number;
 }>();
+
 const liked = ref(false);
 const likeId = ref<number | null>(null);
 const likeCount = ref(props.likes);
 
-// Popup commentaire
 const showPopup = ref(false);
 const commentText = ref("");
 
-// Simule un user connecté (à remplacer par Auth réel)
-const userId = 1; // TODO: remplacer par Auth.id
-
-// On vérifie si le user a liké ce post au montage
+// Vérifier si l'utilisateur a liké ce post
 onMounted(async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
   try {
     const res = await fetch(
-      `http://localhost:8000/api/posts/${props.postId}/likes`
+      `http://localhost:8000/api/posts/${props.postId}/likes`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
     const data = await res.json();
-    const existingLike = data.find((like: any) => like.user_id === userId);
+    const existingLike = data.find((like: any) => like.user_id); // Vérifie que le like existe
     if (existingLike) {
       liked.value = true;
       likeId.value = existingLike.id;
@@ -36,11 +40,19 @@ onMounted(async () => {
 });
 
 async function toggleLike() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You must be logged in to like posts.");
+    return;
+  }
+
   if (liked.value) {
-    // Supprimer le like
     try {
       await fetch(`http://localhost:8000/api/likes/${likeId.value}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       liked.value = false;
       likeId.value = null;
@@ -49,11 +61,13 @@ async function toggleLike() {
       console.error("Error unliking:", error);
     }
   } else {
-    // Ajouter le like
     try {
       const res = await fetch("http://localhost:8000/api/likes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ post_id: props.postId }),
       });
       const data = await res.json();
@@ -68,11 +82,40 @@ async function toggleLike() {
 
 const emit = defineEmits(["comment-added"]);
 
-function submitComment() {
-  if (commentText.value.trim()) {
-    emit("comment-added", commentText.value);
+async function submitComment() {
+  const content = commentText.value.trim();
+  const token = localStorage.getItem("token");
+
+  if (!content) return;
+
+  if (!token) {
+    alert("You must be logged in to comment.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:8000/api/comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        post_id: props.postId,
+        content,
+      }),
+    });
+
+    if (!res.ok) throw new Error("Failed to send comment");
+
+    const newComment = await res.json();
+    emit("comment-added", newComment);
+
     commentText.value = "";
     showPopup.value = false;
+  } catch (err) {
+    console.error("Comment error:", err);
+    alert("Failed to submit comment.");
   }
 }
 
@@ -84,6 +127,7 @@ function cancelComment() {
 
 <template>
   <div class="flex items-center gap-4 text-sm text-darkviolet relative">
+    <!-- Like Button -->
     <button
       @click="toggleLike"
       class="flex items-center gap-1 bg-transparent focus:outline-none border-none p-0"
@@ -105,6 +149,7 @@ function cancelComment() {
       {{ likeCount }}
     </button>
 
+    <!-- Comment Button -->
     <button
       @click="showPopup = true"
       class="flex items-center gap-1 bg-transparent focus:outline-none border-none p-0"
@@ -125,6 +170,7 @@ function cancelComment() {
       {{ comments }}
     </button>
 
+    <!-- Comment Popup -->
     <transition name="fade-scale">
       <div
         v-if="showPopup"
@@ -142,10 +188,7 @@ function cancelComment() {
           >
             Comment
           </button>
-          <button
-            @click="cancelComment"
-            class="px-3 py-1 text-sm text-red-500 bg-transparent border-none focus:outline-none"
-          >
+          <button @click="cancelComment" class="px-3 py-1 text-sm text-red-500">
             Cancel
           </button>
         </div>

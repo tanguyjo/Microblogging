@@ -46,9 +46,13 @@ interface Post {
   comments_data?: CommentType[];
 }
 
+const currentUsername = localStorage.getItem("username") || "anonymous";
+
 onMounted(async () => {
   try {
-    const response = await fetch(`http://localhost:8000/api/posts/${postId}`);
+    const response = await fetch(`http://localhost:8000/api/posts/${postId}`, {
+      credentials: "include",
+    });
     if (!response.ok) {
       throw new Error("Post not found.");
     }
@@ -60,6 +64,29 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+
+// 🆕 Ajoute dynamiquement le commentaire à la liste
+function addNewComment(comment: CommentType) {
+  if (post.value) {
+    const enrichedComment: CommentType = {
+      ...comment,
+      user: {
+        id: 0,
+        username: currentUsername,
+        email: "",
+        bio: "",
+        avatar_url: "",
+        created_at: "",
+        updated_at: "",
+      },
+    };
+
+    post.value.comments_data = [
+      enrichedComment,
+      ...(post.value.comments_data || []),
+    ];
+  }
+}
 
 const formatDate = (date: string) => {
   const d = new Date(date);
@@ -75,6 +102,7 @@ const formatDate = (date: string) => {
 
 <template>
   <div class="max-w-3xl mx-auto px-4 pt-8 pb-16">
+    <!-- Back button -->
     <RouterLink
       to="/"
       class="flex items-center text-darkviolet hover:underline mb-6"
@@ -97,26 +125,34 @@ const formatDate = (date: string) => {
     </RouterLink>
 
     <div v-if="post">
+      <!-- Title -->
       <PostTitle :title="post.title" class="mb-4 text-purple-600 text-2xl" />
 
+      <!-- Date + author -->
       <p class="text-sm text-gray-600 mb-2" v-if="post.user">
         {{ formatDate(post.created_at) }} — @{{ post.user.username }}
       </p>
 
+      <!-- Content -->
       <p class="text-gray-800 leading-relaxed mb-4">
         {{ post.content }}
       </p>
 
+      <!-- Stats -->
       <PostStats
         :likes="post.likes || 0"
         :comments="post.comments_data?.length || 0"
+        :post-id="post.id"
+        @comment-added="addNewComment"
         class="mb-4"
       />
 
+      <!-- Tags -->
       <div class="mt-4 flex flex-wrap gap-2">
         <TagBadge v-for="tag in post.tags" :key="tag" :label="tag" />
       </div>
 
+      <!-- Comments -->
       <div class="mt-10">
         <h2 class="text-xl font-bold text-purple-700 mb-4">
           Comments ({{ post.comments_data?.length || 0 }})
