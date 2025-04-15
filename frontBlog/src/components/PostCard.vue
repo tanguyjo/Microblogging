@@ -20,25 +20,37 @@ defineProps<{
 
 function formatDateTime(
   dateString: string,
-  mode: "full" | "short" = "full"
+  mode: "full" | "short" | "hour" = "full"
 ): string {
-  // La date est au format ISO (ex: "2024-04-14T12:00:00.000000Z")
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Invalid date";
 
-  if (isNaN(date.getTime())) {
-    console.error("Date invalide:", dateString);
-    return "Date invalide";
+  if (mode === "short") {
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
   }
 
-  // Format commun pour mobile et desktop
-  return new Intl.DateTimeFormat("fr-FR", {
+  if (mode === "hour") {
+    return new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(date);
+  })
+    .format(date)
+    .replace(",", "");
 }
 </script>
 

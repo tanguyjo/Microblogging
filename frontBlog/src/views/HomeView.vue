@@ -16,36 +16,37 @@ interface Post {
   created_at: string;
   updated_at: string;
   author: string;
-  
+  likes: number;
+  comments: number;
 }
 const posts = ref<Post[]>([]);
 
 // Récupération des posts depuis l'API
 onMounted(async () => {
   try {
-    console.log('Tentative de récupération des posts...');
+    console.log("Tentative de récupération des posts...");
     const response = await fetch("http://localhost:8000/api/posts");
-    console.log('Réponse reçue:', response);
-    
+    console.log("Réponse reçue:", response);
+
     const data = await response.json();
-    console.log('Données reçues:', data);
-    
+    console.log("Données reçues:", data);
+
     // Transformer les données pour correspondre au format attendu par PostCard
     posts.value = data.map((post: Post) => {
-      console.log('Traitement du post:', post);
+      console.log("Traitement du post:", post);
       return {
         id: post.id,
         title: post.title,
         content: post.content,
-        date: formatDateTime(post.created_at, 'short'),
-        likes: 0,
-        comments: 0,
-        author: post.author || '',
+        date: formatDateTime(post.created_at, "short"),
+        likes: post.likes,
+        comments: post.comments,
+        author: post.author || "",
         tags: [],
       };
     });
-    
-    console.log('Posts transformés:', posts.value);
+
+    console.log("Posts transformés:", posts.value);
   } catch (error) {
     console.error("Erreur de chargement :", error);
   }
@@ -53,8 +54,12 @@ onMounted(async () => {
 
 console.log(posts); // Vérification de la récupération des posts
 
-function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
+function formatDateTime(
+  dateString: string,
+  mode: "full" | "short" = "full"
+): string {
   const date = new Date(dateString);
+
 
   if (isNaN(date.getTime())) {
     console.error('Date invalide:', dateString);
@@ -69,13 +74,11 @@ function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): st
     minute: '2-digit',
     hour12: false,
   }).format(date);
-}
 
+}
 </script>
 
 <template>
-  
-
   <div class="md:flex">
     <!-- SideNav (Desktop uniquement) -->
     <SideNav class="hidden md:block w-20 shrink-0" />
@@ -91,11 +94,7 @@ function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): st
       </h2>
 
       <!-- Liste des posts -->
-      <PostCard
-        v-for="post in posts"
-        :key="post.id"
-        :post="post"
-      />
+      <PostCard v-for="post in posts" :key="post.id" :post="post" />
     </main>
   </div>
 
