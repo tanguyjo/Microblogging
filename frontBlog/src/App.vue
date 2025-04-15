@@ -1,16 +1,4 @@
-<!-- Start of Selection -->
-<script setup lang="ts">
-import { onMounted } from "vue";
-import { fetchCurrentUser } from "./composables/useAuth";
-
-onMounted(async () => {
-  try {
-    await fetchCurrentUser();
-  } catch (error) {
-    console.error("Error retrieving the current user:", error);
-  }
-});
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <router-view />
