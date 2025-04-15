@@ -1,9 +1,14 @@
+<script setup lang="ts">
+import { RouterLink } from 'vue-router';
+</script>
+
 <template>
   <aside
     class="hidden md:fixed md:inset-y-0 md:left-0 md:w-24 bg-white border-r border-darkviolet flex flex-col items-center py-6 space-y-6"
   >
     <!-- Avatar -->
-    <button
+    <RouterLink
+      to="/profile"
       class="flex flex-col items-center gap-1 text-xs text-darkviolet bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
     >
       <div
@@ -12,10 +17,11 @@
         S
       </div>
       <span>Profile</span>
-    </button>
+    </RouterLink>
 
     <!-- Icône : Home -->
-    <button
+    <RouterLink
+      to="/"
       class="flex flex-col items-center gap-1 text-xs text-darkviolet bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
     >
       <svg
@@ -33,7 +39,7 @@
         />
       </svg>
       <span>Home</span>
-    </button>
+    </RouterLink>
 
     <!-- Icône : Search -->
     <button
@@ -57,7 +63,8 @@
     </button>
 
     <!-- Icône : Create -->
-    <button
+    <RouterLink
+      to="/newpost"
       class="flex flex-col items-center gap-1 text-xs text-darkviolet font-bold bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
     >
       <svg
@@ -75,7 +82,7 @@
         />
       </svg>
       <span>Create</span>
-    </button>
+    </RouterLink>
 
     <!-- Icône : For Me -->
     <button

@@ -18,26 +18,40 @@ defineProps<{
   };
 }>();
 
-function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
-  // La date est au format ISO (ex: "2024-04-14T12:00:00.000000Z")
+function formatDateTime(
+  dateString: string,
+  mode: "full" | "short" | "hour" = "full"
+): string {
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Invalid date";
 
-  if (isNaN(date.getTime())) {
-    console.error('Date invalide:', dateString);
-    return 'Date invalide';
+  if (mode === "short") {
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
   }
 
-  // Format commun pour mobile et desktop
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
-}
+  if (mode === "hour") {
+    return new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
 
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .format(date)
+    .replace(",", "");
+}
 </script>
 
 <template>
@@ -73,7 +87,11 @@ function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): st
         :author="post.author"
         class="md:hidden mt-3"
       />
-      <PostStats :likes="post.likes" :comments="post.comments" />
+      <PostStats
+        :likes="post.likes"
+        :comments="post.comments"
+        :postId="post.id"
+      />
       <div class="mt-3 flex flex-wrap gap-2">
         <TagBadge v-for="tag in post.tags" :key="tag" :label="tag" />
       </div>

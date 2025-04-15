@@ -1,6 +1,89 @@
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+
+// Props
+const props = defineProps<{
+  postId: number;
+  likes: number;
+  comments: number;
+}>();
+const liked = ref(false);
+const likeId = ref<number | null>(null);
+const likeCount = ref(props.likes);
+
+// Popup commentaire
+const showPopup = ref(false);
+const commentText = ref("");
+
+// Simule un user connecté (à remplacer par Auth réel)
+const userId = 1; // TODO: remplacer par Auth.id
+
+// On vérifie si le user a liké ce post au montage
+onMounted(async () => {
+  try {
+    const res = await fetch(
+      `http://localhost:8000/api/posts/${props.postId}/likes`
+    );
+    const data = await res.json();
+    const existingLike = data.find((like: any) => like.user_id === userId);
+    if (existingLike) {
+      liked.value = true;
+      likeId.value = existingLike.id;
+    }
+  } catch (error) {
+    console.error("Failed to fetch likes", error);
+  }
+});
+
+async function toggleLike() {
+  if (liked.value) {
+    // Supprimer le like
+    try {
+      await fetch(`http://localhost:8000/api/likes/${likeId.value}`, {
+        method: "DELETE",
+      });
+      liked.value = false;
+      likeId.value = null;
+      likeCount.value--;
+    } catch (error) {
+      console.error("Error unliking:", error);
+    }
+  } else {
+    // Ajouter le like
+    try {
+      const res = await fetch("http://localhost:8000/api/likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_id: props.postId }),
+      });
+      const data = await res.json();
+      liked.value = true;
+      likeId.value = data.id;
+      likeCount.value++;
+    } catch (error) {
+      console.error("Error liking:", error);
+    }
+  }
+}
+
+const emit = defineEmits(["comment-added"]);
+
+function submitComment() {
+  if (commentText.value.trim()) {
+    emit("comment-added", commentText.value);
+    commentText.value = "";
+    showPopup.value = false;
+  }
+}
+
+function cancelComment() {
+  commentText.value = "";
+  showPopup.value = false;
+}
+</script>
+
 <template>
   <div class="flex items-center gap-4 text-sm text-darkviolet relative">
-    <!-- Like Button -->
     <button
       @click="toggleLike"
       class="flex items-center gap-1 bg-transparent focus:outline-none border-none p-0"
@@ -19,10 +102,9 @@
           d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733C11.285 4.876 9.623 3.75 7.687 3.75 5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
         />
       </svg>
-      {{ likes }}
+      {{ likeCount }}
     </button>
 
-    <!-- Comment Button -->
     <button
       @click="showPopup = true"
       class="flex items-center gap-1 bg-transparent focus:outline-none border-none p-0"
@@ -43,7 +125,6 @@
       {{ comments }}
     </button>
 
-    <!-- Comment Popup -->
     <transition name="fade-scale">
       <div
         v-if="showPopup"
@@ -72,55 +153,3 @@
     </transition>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from "vue";
-
-defineProps<{ likes: number; comments: number }>();
-
-const liked = ref(false);
-const showPopup = ref(false);
-const commentText = ref("");
-
-function toggleLike() {
-  liked.value = !liked.value;
-}
-
-function submitComment() {
-  if (commentText.value.trim()) {
-    console.log("Comment submitted:", commentText.value);
-    commentText.value = "";
-    showPopup.value = false;
-  }
-}
-
-function cancelComment() {
-  commentText.value = "";
-  showPopup.value = false;
-}
-</script>
-
-<style scoped>
-.fade-scale-enter-active {
-  transition: all 0.2s ease-out;
-}
-.fade-scale-leave-active {
-  transition: all 0.15s ease-in;
-}
-.fade-scale-enter-from {
-  opacity: 0;
-  transform: scale(0.95);
-}
-.fade-scale-enter-to {
-  opacity: 1;
-  transform: scale(1);
-}
-.fade-scale-leave-from {
-  opacity: 1;
-  transform: scale(1);
-}
-.fade-scale-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
-}
-</style>

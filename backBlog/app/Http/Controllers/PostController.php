@@ -9,24 +9,27 @@ use Illuminate\Support\Facades\Auth;
 class PostController extends Controller
 {
     public function index()
-    {
-        $posts = Post::with('user:id,username') // On ne charge que l'id et le username de l'utilisateur
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($post) {
-                return [
-                    'id' => $post->id,
-                    'title' => $post->title,
-                    'content' => $post->content,
-                    'status' => $post->status,
-                    'visibility' => $post->visibility,
-                    'created_at' => $post->created_at,
-                    'author' => $post->user->username ?? 'Unknown', // 💡 Ici tu récupères le username
-                ];
-            });
-    
-        return response()->json($posts);
-    }
+{
+    $posts = Post::withCount(['likes', 'comments'])
+    ->with('user:id,username')
+    ->orderBy('created_at', 'desc')
+    ->get()
+    ->map(function ($post) {
+        return [
+            'id' => $post->id,
+            'title' => $post->title,
+            'content' => $post->content,
+            'status' => $post->status,
+            'visibility' => $post->visibility,
+            'created_at' => $post->created_at,
+            'author' => $post->user->username ?? 'Unknown',
+            'likes' => $post->likes_count,
+            'comments' => $post->comments_count,
+        ];
+    });
+
+    return response()->json($posts);
+}
 
     public function store(Request $request)
     {
@@ -49,26 +52,36 @@ class PostController extends Controller
     }
 
     public function show(Post $post)
-    {
-        return $post->load(['user', 'hashtags', 'comments']);
-    }
+{
+    $post->load([
+        'user:id,username',
+        'hashtags',
+        'comments.user:id,username'
+    ]);
 
-    public function update(Request $request, Post $post)
-    {
-        if ($post->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
-
-        $validated = $request->validate([
-            'title' => 'required|string',
-            'content' => 'nullable|string',
-            'status' => 'in:draft,published',
-            'visibility' => 'in:public,private,followers',
-        ]);
-
-        $post->update($validated);
-        return response()->json($post);
-    }
+    return response()->json([
+        'id' => $post->id,
+        'user_id' => $post->user_id,
+        'title' => $post->title,
+        'content' => $post->content,
+        'status' => $post->status,
+        'visibility' => $post->visibility,
+        'created_at' => $post->created_at,
+        'updated_at' => $post->updated_at,
+        'user' => $post->user,
+        'likes' => $post->likes()->count(),
+        'tags' => $post->hashtags->pluck('name'),
+        'comments_data' => $post->comments->map(function ($comment) {
+            return [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'created_at' => $comment->created_at,
+                'updated_at' => $comment->updated_at,
+                'user' => $comment->user,
+            ];
+        }),
+    ]);
+}
 
     public function destroy(Post $post)
     {
