@@ -4,12 +4,21 @@
 
     <!-- Affiche l'auteur uniquement s'il est non vide -->
     <span v-if="author?.trim()" class="ml-auto text-gray-600">
-      @{{ author }}
+      <button 
+        @click="goToProfile(author)" 
+        class="hover:text-darkviolet hover:underline"
+      >
+        @{{ author }}
+      </button>
     </span>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
 defineProps<{
   date: string;
   author?: string;
@@ -31,5 +40,9 @@ function formatDateTime(dateString: string): string {
     minute: '2-digit',
     hour12: false,
   }).format(date);
+}
+
+function goToProfile(username: string) {
+  router.push(`/profile/${username}`);
 }
 </script>
