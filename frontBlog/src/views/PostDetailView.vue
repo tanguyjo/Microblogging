@@ -143,6 +143,7 @@ const formatDate = (date: string) => {
         :likes="post.likes || 0"
         :comments="post.comments_data?.length || 0"
         :post-id="post.id"
+        :is-detail-page="true"
         @comment-added="addNewComment"
         class="mb-4"
       />

@@ -4,6 +4,9 @@ import PostContent from "./PostContent.vue";
 import PostStats from "./PostStats.vue";
 import PostAuthor from "./PostAuthor.vue";
 import TagBadge from "./TagBadge.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 defineProps<{
   post: {
@@ -52,6 +55,10 @@ function formatDateTime(
     .format(date)
     .replace(",", "");
 }
+
+function goToProfile(username: string) {
+  router.push(`/profile/${username}`);
+}
 </script>
 
 <template>
@@ -70,12 +77,13 @@ function formatDateTime(
         {{ formatDateTime(post.date) }}
       </span>
 
-      <span
+      <button
         v-if="post.author && post.author.trim() !== ''"
-        class="mt-6 -rotate-90 text-xs text-gray-500 font-light"
+        @click="goToProfile(post.author)"
+        class="mt-6 -rotate-90 text-xs text-gray-500 font-light bg-transparent border-none p-0"
       >
         @{{ post.author }}
-      </span>
+      </button>
     </div>
 
     <!-- Colonne droite -->
