@@ -6,7 +6,7 @@
     <span v-if="author?.trim()" class="ml-auto text-gray-600">
       <button 
         @click="goToProfile(author)" 
-        class="hover:text-darkviolet hover:underline"
+        class="bg-transparent border-none p-0"
       >
         @{{ author }}
       </button>
