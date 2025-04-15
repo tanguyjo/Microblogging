@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref,onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
@@ -9,30 +9,31 @@ import axios from "axios";
 const router = useRouter();
 const activeTab = ref("posts");
 
-const posts = [
-  {
-    id: 1,
-    title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "2022-05-27T00:00:00.000000Z",
-    likes: 352,
-    comments: 288,
-    author: "",
-    tags: ["#mentalpeace", "#ludens"],
-  },
-  {
-    id: 2,
-    title: "Another Reflection On Digital Minimalism.",
-    content:
-      "Digital minimalism is a philosophy of technology use. Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-    date: "2022-05-26T00:00:00.000000Z",
-    likes: 198,
-    comments: 63,
-    author: "",
-    tags: ["#focus", "#mindfulness"],
-  },
-];
+// const posts = [
+//   {
+//     id: 1,
+//     title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
+//     content:
+//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
+//     date: "2022-05-27T00:00:00.000000Z",
+//     likes: 352,
+//     comments: 288,
+//     author: "",
+//     tags: ["#mentalpeace", "#ludens"],
+//   },
+//   {
+//     id: 2,
+//     title: "Another Reflection On Digital Minimalism.",
+//     content:
+//       "Digital minimalism is a philosophy of technology use. Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
+//     date: "2022-05-26T00:00:00.000000Z",
+//     likes: 198,
+//     comments: 63,
+//     author: "",
+//     tags: ["#focus", "#mindfulness"],
+//   },
+// ];
+
 
 async function logout() {
   try {
@@ -83,6 +84,76 @@ async function logout() {
     localStorage.clear();
     router.push('/login');
   }
+}
+
+interface Post {
+  id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  status: string;
+  visibility: string;
+  created_at: string;
+  updated_at: string;
+  author: string;
+  likes: number;
+  comments: number;
+}
+const posts = ref<Post[]>([]);
+
+onMounted(async () => {
+  try {
+    console.log("Tentative de récupération des posts...");
+    const response = await fetch("http://localhost:8000/api/posts");
+    console.log("Réponse reçue:", response);
+
+    const data = await response.json();
+    console.log("Données reçues:", data);
+
+    // Transformer les données pour correspondre au format attendu par PostCard
+    posts.value = data.map((post: Post) => {
+      console.log("Traitement du post:", post);
+      return {
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        date: formatDateTime(post.created_at, "short"),
+        likes: post.likes,
+        comments: post.comments,
+        author: post.author || "",
+        tags: [],
+      };
+    });
+
+    console.log("Posts transformés:", posts.value);
+  } catch (error) {
+    console.error("Erreur de chargement :", error);
+  }
+});
+
+console.log(posts); // Vérification de la récupération des posts
+
+function formatDateTime(
+  dateString: string,
+  mode: "full" | "short" = "full"
+): string {
+  const date = new Date(dateString);
+
+
+  if (isNaN(date.getTime())) {
+    console.error('Date invalide:', dateString);
+    return 'Date invalide';
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+
 }
 </script>
 
