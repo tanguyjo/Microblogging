@@ -18,6 +18,12 @@
           placeholder="Content"
           class="w-full px-4 py-3 border border-darkviolet rounded-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-darkviolet resize-none"
         ></textarea>
+        <input
+          v-model="hashtags"
+          type="text"
+          placeholder="Hashtags (comma separated)"
+          class="w-full px-4 py-3 border border-darkviolet rounded-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-darkviolet"
+        />  
 
         <select
           v-model="visibility"
@@ -64,6 +70,8 @@ const router = useRouter()
 const title = ref('')
 const content = ref('')
 const visibility = ref('public')
+const hashtags = ref('')
+
 
 // Fonction pour récupérer le token depuis localStorage
 const getToken = (): string | null => {
@@ -109,7 +117,9 @@ const sendPost = async (status: string) => {
         title: title.value,
         content: content.value,
         status: status,
+        hashtags: hashtags.value.split(',').map(tag => tag.trim()), // On transforme les hashtags en tableau
         visibility: visibility.value,
+
       }),
       credentials: 'include', // Pour envoyer les cookies si nécessaire
     })

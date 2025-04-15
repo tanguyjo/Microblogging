@@ -31,25 +31,42 @@ class PostController extends Controller
     return response()->json($posts);
 }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string',
-            'content' => 'nullable|string',
-            'status' => 'in:draft,published',
-            'visibility' => 'in:public,private,followers',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'title' => 'required|string',
+        'content' => 'nullable|string',
+        'status' => 'in:draft,published',
+        'visibility' => 'in:public,private,followers',
+        'hashtags' => 'nullable|array',
+        'hashtags.*' => 'string',
+    ]);
 
-        $post = Post::create([
-            'user_id' => Auth::id(),
-            'title' => $validated['title'],
-            'content' => $validated['content'] ?? null,
-            'status' => $validated['status'] ?? 'draft',
-            'visibility' => $validated['visibility'] ?? 'public',
-        ]);
+    $post = Post::create([
+        'user_id' => Auth::id(),
+        'title' => $validated['title'],
+        'content' => $validated['content'] ?? null,
+        'status' => $validated['status'] ?? 'draft',
+        'visibility' => $validated['visibility'] ?? 'public',
+    ]);
 
-        return response()->json($post, 201);
+    if (!empty($request->hashtags)) {
+        $hashtagIds = [];
+
+        foreach ($request->hashtags as $tagName) {
+            $tagName = trim($tagName);
+            $tagName = ltrim($tagName, '#');
+            if (!$tagName) continue;
+
+            $hashtag = \App\Models\Hashtag::firstOrCreate(['name' => $tagName]);
+            $hashtagIds[] = $hashtag->id;
+        }
+
+        $post->hashtags()->sync($hashtagIds);
     }
+
+    return response()->json($post->load('hashtags'), 201);
+}
 
     public function show(Post $post)
 {
