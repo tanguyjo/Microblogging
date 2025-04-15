@@ -34,6 +34,11 @@ class UserController extends Controller
     public function profile()
     {
         $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
         return response()->json([
             'id' => $user->id,
             'username' => $user->username,

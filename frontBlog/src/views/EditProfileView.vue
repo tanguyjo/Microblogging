@@ -32,17 +32,23 @@ const form = reactive({
 });
 
 const error = ref("");
+const success = ref("");
 
 onMounted(async () => {
   try {
+    const token = localStorage.getItem("token");
     const res = await fetch("http://localhost:8000/api/user", {
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
     });
+
     if (!res.ok) throw new Error("Failed to fetch user");
+
     const data = await res.json();
     Object.assign(user, data);
 
-    // Initialise le formulaire avec les données de l'utilisateur
     form.username = user.username;
     form.email = user.email;
     form.bio = user.bio;
@@ -51,9 +57,44 @@ onMounted(async () => {
   }
 });
 
-function handleSubmit() {
-  // TODO: appel à l'API de mise à jour ici
-  console.log("Formulaire soumis :", form);
+async function handleSubmit() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    error.value = "User not authenticated.";
+    return;
+  }
+
+  if (form.password && form.password !== form.confirmPassword) {
+    error.value = "Passwords do not match.";
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:8000/api/user", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        username: form.username,
+        email: form.email,
+        bio: form.bio,
+        ...(form.password ? { password: form.password } : {}),
+      }),
+    });
+
+    if (!res.ok) throw new Error("Failed to update user.");
+
+    success.value = "Profile updated successfully.";
+    error.value = "";
+    form.password = "";
+    form.confirmPassword = "";
+  } catch (err) {
+    success.value = "";
+    error.value = (err as Error).message;
+  }
 }
 
 function resetForm() {
@@ -72,15 +113,17 @@ function resetForm() {
 
     <!-- Contenu principal -->
     <main class="w-full px-4 pb-24 max-w-5xl mx-auto font-sans">
-      <h2 class="text-3xl font-bold text-center mt-8 mb-10">Edit profile</h2>
+      <h2 class="text-3xl font-title text-center mt-8 mb-10">Edit profile</h2>
 
       <form
         @submit.prevent="handleSubmit"
         class="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center items-start"
       >
         <!-- Avatar -->
+        <!-- <label class="block font-medium mb-1" for="avatar">Avatar</label> -->
+
         <div
-          class="flex flex-col items-center border p-4 rounded w-full max-w-xs"
+          class="flex flex-col items-center border p-4 rounded w-full max-w-xs h-[130px]"
         >
           <div
             class="w-20 h-20 bg-purple-500 text-white rounded-full flex items-center justify-center text-xl font-semibold"
@@ -93,13 +136,13 @@ function resetForm() {
         </div>
 
         <!-- Bio -->
-        <div class="w-full h-full">
+        <div class="w-full h-[130px]">
           <label class="block font-medium mb-1" for="bio">Bio</label>
           <textarea
             id="bio"
             v-model="form.bio"
             placeholder="Live, Laugh, Love"
-            class="w-full h-full min-h-[110px] border rounded p-2"
+            class="w-full h-full border rounded p-2 resize-none"
           />
         </div>
 
@@ -166,8 +209,17 @@ function resetForm() {
           </button>
         </div>
 
-        <p v-if="error" class="text-red-500 text-center col-span-full mt-2">
+        <p
+          v-if="error"
+          class="text-red-500 text-center col-span-full mt-2 font-semibold"
+        >
           {{ error }}
+        </p>
+        <p
+          v-if="success"
+          class="text-green-600 text-center col-span-full mt-2 font-semibold"
+        >
+          {{ success }}
         </p>
       </form>
     </main>
