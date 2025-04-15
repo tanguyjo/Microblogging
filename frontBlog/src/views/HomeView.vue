@@ -56,21 +56,19 @@ console.log(posts); // Vérification de la récupération des posts
 function formatDateTime(dateString: string, mode: 'full' | 'short' = 'full'): string {
   const date = new Date(dateString);
 
-  if (mode === 'short') {
-    return new Intl.DateTimeFormat('en-CA', {
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date);
+  if (isNaN(date.getTime())) {
+    console.error('Date invalide:', dateString);
+    return 'Date invalide';
   }
 
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
+  return new Intl.DateTimeFormat('fr-FR', {
     day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-  }).format(date).replace(',', '');
+  }).format(date);
 }
 
 </script>
