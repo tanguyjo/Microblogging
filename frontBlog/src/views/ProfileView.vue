@@ -1,13 +1,117 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
 import axios from "axios";
 
 const router = useRouter();
+const route = useRoute();
 const activeTab = ref("posts");
+const isOwnProfile = ref(true);
+const isFollowing = ref(false);
+const userProfile = ref({
+  username: "",
+  bio: "",
+  avatar: "",
+  postsCount: 0,
+  followersCount: 0,
+  followingCount: 0,
+});
+
+function getUsernameFromParams(params: any): string | null {
+  if (typeof params.username === 'string') {
+    return params.username;
+  }
+  if (Array.isArray(params.username) && params.username.length > 0) {
+    return params.username[0];
+  }
+  return null;
+}
+
+async function checkFollowStatus(username: string | string[]) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const usernameStr = Array.isArray(username) ? username[0] : username;
+    if (!usernameStr) return;
+
+    const response = await fetch(`http://localhost:8000/api/users/${usernameStr}/follow-status`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      isFollowing.value = data.is_following;
+    }
+  } catch (error) {
+    console.error("Error checking follow status:", error);
+  }
+}
+
+async function toggleFollow() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    const username = getUsernameFromParams(route.params);
+    if (!username) return;
+    
+    const method = isFollowing.value ? 'DELETE' : 'POST';
+    
+    const response = await fetch(`http://localhost:8000/api/users/${username}/follow`, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      isFollowing.value = !isFollowing.value;
+      // Mettre à jour le nombre de followers
+      userProfile.value.followersCount += isFollowing.value ? 1 : -1;
+    }
+  } catch (error) {
+    console.error("Error toggling follow status:", error);
+  }
+}
+
+onMounted(async () => {
+  const username = route.params.username;
+  if (username) {
+    isOwnProfile.value = false;
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${username}`);
+      if (response.ok) {
+        const data = await response.json();
+        userProfile.value = {
+          username: data.username,
+          bio: data.bio || "No bio yet",
+          avatar: data.avatar_url || "",
+          postsCount: data.posts_count || 0,
+          followersCount: data.followers_count || 0,
+          followingCount: data.following_count || 0,
+        };
+        await checkFollowStatus(username);
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  } else {
+    // Si pas de username dans l'URL, c'est le profil de l'utilisateur connecté
+    const currentUsername = localStorage.getItem("username");
+    if (currentUsername) {
+      userProfile.value.username = currentUsername;
+    }
+  }
+});
 
 const posts = [
   {
@@ -99,22 +203,22 @@ async function logout() {
         <div
           class="w-24 h-24 mx-auto rounded-full bg-darkviolet text-white font-title flex items-center justify-center text-3xl font-bold"
         >
-          S
+          {{ userProfile.username.charAt(0).toUpperCase() }}
         </div>
 
         <!-- Nom + bio -->
-        <h1 class="text-xl font-bold mt-4">Somnath Das</h1>
-        <p class="text-sm text-gray-600 mt-1">Live, Laugh, Love</p>
+        <h1 class="text-xl font-bold mt-4">{{ userProfile.username }}</h1>
+        <p class="text-sm text-gray-600 mt-1">{{ userProfile.bio }}</p>
 
         <!-- Stats -->
         <div class="flex justify-center gap-6 mt-4 text-sm">
-          <span><strong>356</strong> posts</span>
-          <span><strong>1,222</strong> followers</span>
-          <span><strong>342</strong> following</span>
+          <span><strong>{{ userProfile.postsCount }}</strong> posts</span>
+          <span><strong>{{ userProfile.followersCount }}</strong> followers</span>
+          <span><strong>{{ userProfile.followingCount }}</strong> following</span>
         </div>
 
-        <!-- Edit & Logout -->
-        <div class="flex justify-center items-center gap-4 mt-4 text-sm">
+        <!-- Edit & Logout (uniquement sur son propre profil) -->
+        <div v-if="isOwnProfile" class="flex justify-center items-center gap-4 mt-4 text-sm">
           <RouterLink
             to="/edit-profile"
             class="text-darkviolet font-medium hover:underline"
@@ -126,6 +230,17 @@ async function logout() {
             class="text-red-500 font-medium hover:underline bg-transparent border-none p-0"
           >
             Log out
+          </button>
+        </div>
+
+        <!-- Follow/Unfollow button (uniquement sur le profil des autres) -->
+        <div v-else class="flex justify-center mt-4">
+          <button
+            @click="toggleFollow"
+            class="px-4 py-2 rounded-full text-sm font-medium"
+            :class="isFollowing ? 'bg-gray-200 text-gray-800' : 'bg-darkviolet text-white'"
+          >
+            {{ isFollowing ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
       </section>
