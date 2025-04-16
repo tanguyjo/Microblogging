@@ -32,10 +32,11 @@ const followingUsers = ref<string[]>([]);
 // Récupérer la liste des utilisateurs suivis
 async function fetchFollowingUsers() {
   const token = localStorage.getItem("token");
-  if (!token) return;
+  const userId = localStorage.getItem("user_id");
+  if (!token || !userId) return;
 
   try {
-    const response = await fetch("http://localhost:8000/api/users/following", {
+    const response = await fetch(`http://localhost:8000/api/users/${userId}/following`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -43,6 +44,7 @@ async function fetchFollowingUsers() {
     if (response.ok) {
       const data = await response.json();
       followingUsers.value = data.map((user: any) => user.username);
+      console.log("Following users loaded:", followingUsers.value);
     }
   } catch (error) {
     console.error("Erreur lors de la récupération des abonnements:", error);
