@@ -30,11 +30,11 @@ class UserController extends Controller
         return $user->following()->with('followed')->get();
     }
 
-    // GET /api/user (profile de l'utilisateur connecté)
+    // GET /api/user (profil de l'utilisateur connecté)
     public function profile()
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
@@ -52,15 +52,18 @@ class UserController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
-        
+
         $validated = $request->validate([
             'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
             'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
-            'bio' => 'nullable|string',
-            'avatar_url' => 'nullable|url'
+            'bio' => 'sometimes|nullable|string',
+            'avatar_url' => 'sometimes|nullable|url'
         ]);
 
         $user->update($validated);
+
+        // on s'assure que les données sont refresh
+        $user->refresh();
 
         return response()->json([
             'id' => $user->id,
@@ -71,4 +74,3 @@ class UserController extends Controller
         ]);
     }
 }
-
