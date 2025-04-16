@@ -5,6 +5,7 @@ import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
 import axios from "axios";
+import { useAsyncQueue } from "@vueuse/core";
 
 const router = useRouter();
 const route = useRoute();
@@ -97,7 +98,6 @@ async function fetchUserProfile(userIdOrUsername: string, isId = false) {
     console.error("Error fetching user profile:", error);
   }
 }
-
 async function fetchUserPosts(userId: string) {
   try {
     const response = await fetch(
@@ -112,20 +112,44 @@ async function fetchUserPosts(userId: string) {
     if (!response.ok) throw new Error("Failed to load posts");
     const data = await response.json();
 
-    posts.value = data.map((post: any) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      created_at: post.created_at,
-      likes: post.likes ?? 0,
-      comments: post.comments?.length ?? 0,
-      author: post.user?.username ?? "",
-    }));
+    posts.value = await Promise.all(
+      data.map(async (post: any) => {
+        const likesList = await fetchpostlikes(post.id);
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          created_at: post.created_at,
+          likes: likesList?.length ?? 0,
+          comments: post.comments?.length ?? 0,
+          author: post.user?.username ?? "",
+        };
+      })
+    );
   } catch (error) {
     console.error("Error fetching posts:", error);
   }
 }
 
+async function fetchpostlikes(postId: number) {
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/posts/${postId}/likes`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Post Likes:", data.length);
+      return data;
+    }
+  } catch (error) {
+    console.error("Error fetching post likes:", error);
+  }
+}
 async function checkFollowStatus(userId: string) {
   const token = localStorage.getItem("token");
   if (!token) return;
