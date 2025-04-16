@@ -83,6 +83,7 @@
 
     <!-- Icône : Pour moi -->
     <button
+      @click="emit('for-me-click')"
       aria-label="For me"
       class="p-2 bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
     >
@@ -110,6 +111,7 @@ import { ref, onMounted } from 'vue';
 
 const emit = defineEmits<{
   (e: 'search-click'): void;
+  (e: 'for-me-click'): void;
 }>();
 
 const userProfile = ref({

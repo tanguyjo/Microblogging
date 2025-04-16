@@ -26,9 +26,32 @@ const posts = ref<Post[]>([]);
 const selectedHashtag = ref<string | null>(null);
 const availableHashtags = ref<string[]>([]);
 const isSearchOpen = ref(false);
+const showOnlyFollowing = ref(false);
+const followingUsers = ref<string[]>([]);
+
+// Récupérer la liste des utilisateurs suivis
+async function fetchFollowingUsers() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const response = await fetch("http://localhost:8000/api/users/following", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      followingUsers.value = data.map((user: any) => user.username);
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des abonnements:", error);
+  }
+}
 
 // Récupération des posts depuis l'API
 onMounted(async () => {
+  await fetchFollowingUsers();
   try {
     console.log("Tentative de récupération des posts...");
     const response = await fetch("http://localhost:8000/api/posts");
@@ -67,17 +90,41 @@ onMounted(async () => {
   }
 });
 
-// Filtrer les posts par hashtag
+// Filtrer les posts par hashtag et par abonnements
 const filteredPosts = computed(() => {
-  if (!selectedHashtag.value) return posts.value;
-  return posts.value.filter(post => 
-    post.hashtags?.includes(selectedHashtag.value!)
-  );
+  let filtered = posts.value;
+  
+  // Filtrer par hashtag si sélectionné
+  if (selectedHashtag.value) {
+    filtered = filtered.filter(post => 
+      post.hashtags?.includes(selectedHashtag.value!)
+    );
+  }
+  
+  // Filtrer par abonnements si activé
+  if (showOnlyFollowing.value) {
+    console.log('Filtering by following users...');
+    filtered = filtered.filter(post => {
+      const isFollowing = followingUsers.value.includes(post.author);
+      console.log(`Post author: ${post.author}, Is following: ${isFollowing}`);
+      return isFollowing;
+    });
+  }
+  
+  console.log('Filtered posts count:', filtered.length);
+  return filtered;
 });
 
 function handleHashtagSelect(hashtag: string | null) {
   selectedHashtag.value = hashtag;
   isSearchOpen.value = false;
+}
+
+function toggleFollowingPosts() {
+  console.log('Toggle following posts, current state:', showOnlyFollowing.value);
+  showOnlyFollowing.value = !showOnlyFollowing.value;
+  console.log('New state:', showOnlyFollowing.value);
+  console.log('Following users:', followingUsers.value);
 }
 
 function formatDateTime(dateString: string, mode: "full" | "short" = "full"): string {
@@ -105,6 +152,7 @@ function formatDateTime(dateString: string, mode: "full" | "short" = "full"): st
     <SideNav 
       class="hidden md:block w-20 shrink-0"
       @search-click="isSearchOpen = true"
+      @for-me-click="toggleFollowingPosts"
     />
 
     <!-- Contenu principal -->
@@ -112,7 +160,8 @@ function formatDateTime(dateString: string, mode: "full" | "short" = "full"): st
       <!-- Header -->
       <h2 class="text-center text-xl font-semibold mb-6 font-sans relative text-black">
         <span class="block w-4 h-1 bg-purple-600 mx-auto mb-1"></span>
-        {{ selectedHashtag ? `#${selectedHashtag}` : 'Latest' }}
+        <span v-if="showOnlyFollowing">Following Feed</span>
+        <span v-else>{{ selectedHashtag ? `#${selectedHashtag}` : 'Latest' }}</span>
       </h2>
 
       <!-- Liste des posts -->
@@ -124,6 +173,7 @@ function formatDateTime(dateString: string, mode: "full" | "short" = "full"): st
   <BottomNav 
     class="block md:hidden"
     @search-click="isSearchOpen = true"
+    @for-me-click="toggleFollowingPosts"
   />
 
   <!-- Search Popup -->
