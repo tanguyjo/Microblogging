@@ -8,42 +8,116 @@ import axios from "axios";
 
 const router = useRouter();
 const route = useRoute();
+
 const activeTab = ref("posts");
 const isOwnProfile = ref(true);
 const isFollowing = ref(false);
+const loading = ref(true);
+
 const userProfile = ref({
   username: "",
-  bio: "",
+  bio: "No bio yet",
   avatar: "",
   postsCount: 0,
   followersCount: 0,
   followingCount: 0,
 });
 
-function getUsernameFromParams(params: any): string | null {
-  if (typeof params.username === 'string') {
-    return params.username;
-  }
-  if (Array.isArray(params.username) && params.username.length > 0) {
-    return params.username[0];
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  likes: number;
+  comments: number;
+  author: string;
+}
+
+const posts = ref<Post[]>([]);
+
+async function fetchCurrentUserId(): Promise<string | null> {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const response = await fetch("http://localhost:8000/api/user", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.id;
+    }
+  } catch (error) {
+    console.error("Failed to fetch current user ID:", error);
   }
   return null;
 }
 
-async function checkFollowStatus(username: string | string[]) {
+async function fetchUserProfile(userIdOrUsername: string, isId = false) {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    const endpoint = isId
+      ? `http://localhost:8000/api/users/${userIdOrUsername}`
+      : `http://localhost:8000/api/users/${userIdOrUsername}`;
 
-    const usernameStr = Array.isArray(username) ? username[0] : username;
-    if (!usernameStr) return;
+    const response = await fetch(endpoint);
+    if (response.ok) {
+      const data = await response.json();
+      userProfile.value = {
+        username: data.username,
+        bio: data.bio || "No bio yet",
+        avatar: data.avatar_url || "",
+        postsCount: data.posts || 0,
+        followersCount: data.followers || 0,
+        followingCount: data.following || 0,
+      };
+      console.log("User Profile:", userProfile.value);
+      console.log("Posts:", posts.value);
+      return data;
+    }
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+  }
+}
 
-    const response = await fetch(`http://localhost:8000/api/users/${usernameStr}/follow-status`, {
+async function fetchUserPosts(userId: string) {
+  try {
+    const response = await fetch(`http://localhost:8000/api/users/${userId}/posts`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
-    
+
+    if (!response.ok) throw new Error("Failed to load posts");
+    const data = await response.json();
+
+    posts.value = data.map((post: any) => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      created_at: post.created_at,
+      likes: post.likes ?? 0,
+      comments: post.comments?.length ?? 0,
+      author: post.user?.username ?? "",
+    }));
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+  }
+}
+
+async function checkFollowStatus(userId: string) {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/users/${userId}/follow-status`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     if (response.ok) {
       const data = await response.json();
       isFollowing.value = data.is_following;
@@ -54,141 +128,84 @@ async function checkFollowStatus(username: string | string[]) {
 }
 
 async function toggleFollow() {
+  const token = localStorage.getItem("token");
+  if (!token) return router.push("/login");
+
+  const profileId = route.params.username as string;
+  const method = isFollowing.value ? "DELETE" : "POST";
+
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    const username = getUsernameFromParams(route.params);
-    if (!username) return;
-    
-    const method = isFollowing.value ? 'DELETE' : 'POST';
-    
-    const response = await fetch(`http://localhost:8000/api/users/${username}/follow`, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`
+    const response = await fetch(
+      `http://localhost:8000/api/users/${profileId}/follow`,
+      {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    });
-
+    );
     if (response.ok) {
       isFollowing.value = !isFollowing.value;
-      // Mettre à jour le nombre de followers
       userProfile.value.followersCount += isFollowing.value ? 1 : -1;
     }
   } catch (error) {
-    console.error("Error toggling follow status:", error);
+    console.error("Error toggling follow:", error);
   }
+}
+
+async function logout() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    localStorage.clear();
+    return router.push("/login");
+  }
+
+  try {
+    await axios.post("/api/logout", {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+
+  localStorage.clear();
+  router.push("/login");
 }
 
 onMounted(async () => {
-  const username = route.params.username;
-  if (username) {
-    isOwnProfile.value = false;
-    try {
-      const response = await fetch(`http://localhost:8000/api/users/${username}`);
-      if (response.ok) {
-        const data = await response.json();
-        userProfile.value = {
-          username: data.username,
-          bio: data.bio || "No bio yet",
-          avatar: data.avatar_url || "",
-          postsCount: data.posts_count || 0,
-          followersCount: data.followers_count || 0,
-          followingCount: data.following_count || 0,
-        };
-        await checkFollowStatus(username);
-      }
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
+  loading.value = true;
+  const currentUserId = await fetchCurrentUserId();
+  const username = route.params.username as string;
+
+  if (!username || username === userProfile.value.username) {
+    isOwnProfile.value = true;
+    if (currentUserId) {
+      await Promise.all([
+        fetchUserProfile(currentUserId, true),
+        fetchUserPosts(currentUserId)
+      ]);
     }
   } else {
-    // Si pas de username dans l'URL, c'est le profil de l'utilisateur connecté
-    const currentUsername = localStorage.getItem("username");
-    if (currentUsername) {
-      userProfile.value.username = currentUsername;
+    isOwnProfile.value = false;
+    const userData = await fetchUserProfile(username);
+    if (userData?.id) {
+      await Promise.all([
+        fetchUserPosts(userData.id),
+        checkFollowStatus(userData.id)
+      ]);
     }
   }
+
+  loading.value = false;
 });
 
-const posts = [
-  {
-    id: 1,
-    title: "15 Disadvantages Of Freedom And How You Can Workaround It.",
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-    date: "2022-05-27T00:00:00.000000Z",
-    likes: 352,
-    comments: 288,
-    author: "",
-    tags: ["#mentalpeace", "#ludens"],
-  },
-  {
-    id: 2,
-    title: "Another Reflection On Digital Minimalism.",
-    content:
-      "Digital minimalism is a philosophy of technology use. Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-    date: "2022-05-26T00:00:00.000000Z",
-    likes: 198,
-    comments: 63,
-    author: "",
-    tags: ["#focus", "#mindfulness"],
-  },
-];
 
-async function logout() {
-  try {
-    console.log('Début de la déconnexion...');
-    const token = localStorage.getItem('token');
-    console.log('Token actuel:', token);
 
-    if (!token) {
-      console.error('Aucun token trouvé');
-      // Même sans token, on redirige vers la page de login
-      localStorage.clear(); // On nettoie tout le localStorage par sécurité
-      router.push('/login');
-      return;
-    }
-
-    try {
-      console.log('Envoi de la requête de déconnexion...');
-      const response = await axios.post('/api/logout', {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('Réponse de déconnexion:', response);
-    } catch (apiError) {
-      console.error('Erreur API lors de la déconnexion:', apiError);
-      // On continue le processus même si l'API échoue
-    }
-    
-    // Dans tous les cas, on nettoie le localStorage et on redirige
-    console.log('Nettoyage du localStorage...');
-    localStorage.clear(); // On nettoie tout le localStorage
-    
-    console.log('Redirection vers la page de connexion...');
-    await router.push('/login');
-  } catch (error) {
-    console.error('Erreur globale lors de la déconnexion:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Détails de l\'erreur:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        headers: error.response?.headers
-      });
-    }
-    // Même en cas d'erreur, on essaie de rediriger
-    localStorage.clear();
-    router.push('/login');
-  }
-}
 </script>
+
+
 
 <template>
   <div class="md:flex">
@@ -212,9 +229,10 @@ async function logout() {
 
         <!-- Stats -->
         <div class="flex justify-center gap-6 mt-4 text-sm">
-          <span><strong>{{ userProfile.postsCount }}</strong> posts</span>
-          <span><strong>{{ userProfile.followersCount }}</strong> followers</span>
-          <span><strong>{{ userProfile.followingCount }}</strong> following</span>
+
+          <span><strong>{{ userProfile.postsCount.length }}</strong> posts</span>
+          <span><strong>{{ userProfile.followersCount.length }}</strong> followers</span>
+          <span><strong>{{ userProfile.followingCount.length }}</strong> following</span>
         </div>
 
         <!-- Edit & Logout (uniquement sur son propre profil) -->

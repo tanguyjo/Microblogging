@@ -72,7 +72,6 @@ const content = ref('')
 const visibility = ref('public')
 const hashtags = ref('')
 
-
 // Fonction pour récupérer le token depuis localStorage
 const getToken = (): string | null => {
   return localStorage.getItem('token')
