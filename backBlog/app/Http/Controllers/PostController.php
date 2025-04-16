@@ -9,96 +9,98 @@ use Illuminate\Support\Facades\Auth;
 class PostController extends Controller
 {
     public function index()
-{
-    $posts = Post::withCount(['likes', 'comments'])
-    ->with('user:id,username')
-    ->orderBy('created_at', 'desc')
-    ->get()
-    ->map(function ($post) {
-        return [
+    {
+        $posts = Post::with(['user', 'likes', 'comments', 'hashtags'])
+            ->withCount(['likes', 'comments'])
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'user_id' => $post->user_id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'status' => $post->status,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'updated_at' => $post->updated_at,
+                    'author' => $post->user->name,
+                    'likes' => $post->likes_count,
+                    'comments' => $post->comments_count,
+                    'hashtags' => $post->hashtags->pluck('name')->toArray()
+                ];
+            });
+
+        return response()->json($posts);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string',
+            'content' => 'nullable|string',
+            'status' => 'in:draft,published',
+            'visibility' => 'in:public,private,followers',
+            'hashtags' => 'nullable|array',
+            'hashtags.*' => 'string',
+        ]);
+
+        $post = Post::create([
+            'user_id' => Auth::id(),
+            'title' => $validated['title'],
+            'content' => $validated['content'] ?? null,
+            'status' => $validated['status'] ?? 'draft',
+            'visibility' => $validated['visibility'] ?? 'public',
+        ]);
+
+        if (!empty($request->hashtags)) {
+            $hashtagIds = [];
+
+            foreach ($request->hashtags as $tagName) {
+                $tagName = trim($tagName);
+                $tagName = ltrim($tagName, '#');
+                if (!$tagName) continue;
+
+                $hashtag = \App\Models\Hashtag::firstOrCreate(['name' => $tagName]);
+                $hashtagIds[] = $hashtag->id;
+            }
+
+            $post->hashtags()->sync($hashtagIds);
+        }
+
+        return response()->json($post->load('hashtags'), 201);
+    }
+
+    public function show(Post $post)
+    {
+        $post->load([
+            'user:id,username',
+            'hashtags',
+            'comments.user:id,username'
+        ]);
+
+        return response()->json([
             'id' => $post->id,
+            'user_id' => $post->user_id,
             'title' => $post->title,
             'content' => $post->content,
             'status' => $post->status,
             'visibility' => $post->visibility,
             'created_at' => $post->created_at,
-            'author' => $post->user->username ?? 'Unknown',
-            'likes' => $post->likes_count,
-            'comments' => $post->comments_count,
-        ];
-    });
-
-    return response()->json($posts);
-}
-
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'title' => 'required|string',
-        'content' => 'nullable|string',
-        'status' => 'in:draft,published',
-        'visibility' => 'in:public,private,followers',
-        'hashtags' => 'nullable|array',
-        'hashtags.*' => 'string',
-    ]);
-
-    $post = Post::create([
-        'user_id' => Auth::id(),
-        'title' => $validated['title'],
-        'content' => $validated['content'] ?? null,
-        'status' => $validated['status'] ?? 'draft',
-        'visibility' => $validated['visibility'] ?? 'public',
-    ]);
-
-    if (!empty($request->hashtags)) {
-        $hashtagIds = [];
-
-        foreach ($request->hashtags as $tagName) {
-            $tagName = trim($tagName);
-            $tagName = ltrim($tagName, '#');
-            if (!$tagName) continue;
-
-            $hashtag = \App\Models\Hashtag::firstOrCreate(['name' => $tagName]);
-            $hashtagIds[] = $hashtag->id;
-        }
-
-        $post->hashtags()->sync($hashtagIds);
+            'updated_at' => $post->updated_at,
+            'user' => $post->user,
+            'likes' => $post->likes()->count(),
+            'tags' => $post->hashtags->pluck('name'),
+            'comments_data' => $post->comments->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'created_at' => $comment->created_at,
+                    'updated_at' => $comment->updated_at,
+                    'user' => $comment->user,
+                ];
+            }),
+        ]);
     }
-
-    return response()->json($post->load('hashtags'), 201);
-}
-
-    public function show(Post $post)
-{
-    $post->load([
-        'user:id,username',
-        'hashtags',
-        'comments.user:id,username'
-    ]);
-
-    return response()->json([
-        'id' => $post->id,
-        'user_id' => $post->user_id,
-        'title' => $post->title,
-        'content' => $post->content,
-        'status' => $post->status,
-        'visibility' => $post->visibility,
-        'created_at' => $post->created_at,
-        'updated_at' => $post->updated_at,
-        'user' => $post->user,
-        'likes' => $post->likes()->count(),
-        'tags' => $post->hashtags->pluck('name'),
-        'comments_data' => $post->comments->map(function ($comment) {
-            return [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'created_at' => $comment->created_at,
-                'updated_at' => $comment->updated_at,
-                'user' => $comment->user,
-            ];
-        }),
-    ]);
-}
 
     public function destroy(Post $post)
     {
@@ -130,5 +132,39 @@ public function store(Request $request)
         return Post::where('user_id', $userId)
             ->with(['user', 'hashtags', 'comments'])
             ->get();
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        
+        if (!$query) {
+            return $this->index();
+        }
+
+        $posts = Post::with(['user', 'likes', 'comments', 'hashtags'])
+            ->withCount(['likes', 'comments'])
+            ->whereHas('hashtags', function ($q) use ($query) {
+                $q->where('name', 'like', '%' . $query . '%');
+            })
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'user_id' => $post->user_id,
+                    'title' => $post->title,
+                    'content' => $post->content,
+                    'status' => $post->status,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'updated_at' => $post->updated_at,
+                    'author' => $post->user->name,
+                    'likes' => $post->likes_count,
+                    'comments' => $post->comments_count,
+                    'hashtags' => $post->hashtags->pluck('name')->toArray()
+                ];
+            });
+
+        return response()->json($posts);
     }
 }
