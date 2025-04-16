@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const props = defineProps<{
   postId: number;
   likes: number;
   comments: number;
+  isDetailPage?: boolean;
 }>();
 
 const liked = ref(false);
@@ -151,7 +155,7 @@ function cancelComment() {
 
     <!-- Comment Button -->
     <button
-      @click="showPopup = true"
+      @click="isDetailPage ? showPopup = true : router.push(`/posts/${postId}`)"
       class="flex items-center gap-1 bg-transparent focus:outline-none border-none p-0"
     >
       <svg
