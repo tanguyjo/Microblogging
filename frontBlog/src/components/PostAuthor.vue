@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center text-sm mt-4 font-medium text-gray-800">
-    <span>{{ formatDateTime(date) }}</span>
+    <span>{{ formatDateTime(created_at) }}</span>
 
     <!-- Affiche l'auteur uniquement s'il est non vide -->
     <span v-if="author?.trim()" class="ml-auto text-gray-600">
@@ -20,26 +20,32 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 defineProps<{
-  date: string;
+  created_at: string;
   author?: string;
 }>();
 
 function formatDateTime(dateString: string): string {
+  if (!dateString?.trim()) {
+    console.log('Date string is empty or undefined');
+    return 'Date non disponible';
+  }
+
+  console.log('Received date string:', dateString);
   const date = new Date(dateString);
+  console.log('Parsed date object:', date);
 
   if (isNaN(date.getTime())) {
-    console.error('Date invalide:', dateString);
+    console.error('Invalid date string format:', dateString);
     return 'Date invalide';
   }
 
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
 function goToProfile(username: string) {

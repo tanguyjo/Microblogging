@@ -44,7 +44,7 @@ onMounted(async () => {
         id: post.id,
         title: post.title,
         content: post.content,
-        date: post.created_at,
+        created_at: post.created_at,
         likes: post.likes,
         comments: post.comments,
         author: post.author || "",

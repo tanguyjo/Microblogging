@@ -13,7 +13,7 @@ defineProps<{
     id: number;
     title: string;
     content: string;
-    date: string;
+    created_at: string;
     likes: number;
     comments: number;
     author: string;
@@ -69,12 +69,12 @@ function goToProfile(username: string) {
     >
       <!-- Desktop only -->
       <span class="hidden md:block text-sm text-gray-800">
-        {{ formatDateTime(post.date) }}
+        {{ formatDateTime(post.created_at) }}
       </span>
 
       <!-- Mobile only -->
       <span class="block md:hidden text-sm text-gray-600">
-        {{ formatDateTime(post.date) }}
+        {{ formatDateTime(post.created_at) }}
       </span>
 
       <button
@@ -91,7 +91,7 @@ function goToProfile(username: string) {
       <PostTitle :title="post.title" />
       <PostContent :preview="post.content.slice(0, 200)" :postId="post.id" />
       <PostAuthor
-        :date="post.date"
+        :created_at="post.created_at"
         :author="post.author"
         class="md:hidden mt-3"
       />
