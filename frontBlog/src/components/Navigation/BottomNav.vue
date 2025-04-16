@@ -11,7 +11,7 @@
       <div
         class="w-8 h-8 rounded-full bg-darkviolet text-white font-title flex items-center justify-center font-bold text-lg"
       >
-        S
+        {{ userProfile.username.charAt(0).toUpperCase() }}
       </div>
     </RouterLink>
 
@@ -106,8 +106,49 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { ref, onMounted } from 'vue';
 
 const emit = defineEmits<{
   (e: 'search-click'): void;
 }>();
+
+const userProfile = ref({
+  username: localStorage.getItem('username') || "",
+  bio: "No bio yet",
+  avatar: "",
+  postsCount: 0,
+  followersCount: 0,
+  followingCount: 0,
+});
+
+async function fetchUserProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const response = await fetch("http://localhost:8000/api/user", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      userProfile.value = {
+        username: data.username,
+        bio: data.bio || "No bio yet",
+        avatar: data.avatar_url || "",
+        postsCount: data.posts_count || 0,
+        followersCount: data.followers_count || 0,
+        followingCount: data.following_count || 0,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+  }
+}
+
+onMounted(() => {
+  fetchUserProfile();
+});
 </script>
