@@ -23,7 +23,7 @@ class PostController extends Controller
                     'visibility' => $post->visibility,
                     'created_at' => $post->created_at,
                     'updated_at' => $post->updated_at,
-                    'author' => $post->user->name,
+                    'author' => $post->user->username,
                     'likes' => $post->likes_count,
                     'comments' => $post->comments_count,
                     'hashtags' => $post->hashtags->pluck('name')->toArray()
@@ -158,7 +158,7 @@ class PostController extends Controller
                     'visibility' => $post->visibility,
                     'created_at' => $post->created_at,
                     'updated_at' => $post->updated_at,
-                    'author' => $post->user->name,
+                    'author' => $post->user->username,
                     'likes' => $post->likes_count,
                     'comments' => $post->comments_count,
                     'hashtags' => $post->hashtags->pluck('name')->toArray()
