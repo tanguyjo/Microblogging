@@ -14,10 +14,23 @@ class UserController extends Controller
         return User::all();
     }
 
-    // GET /api/users/{user}
-    public function show(User $user)
+    // GET /api/users/{username}
+    public function show($username)
     {
-        return $user->load(['posts', 'followers', 'following']);
+        $user = User::where('username', $username)->firstOrFail();
+        
+        // Charger les relations nécessaires
+        $user->loadCount(['posts', 'followers', 'following']);
+        
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'bio' => $user->bio,
+            'avatar_url' => $user->avatar_url,
+            'posts_count' => $user->posts_count,
+            'followers_count' => $user->followers_count,
+            'following_count' => $user->following_count
+        ]);
     }
 
     public function followers(User $user)
@@ -39,12 +52,18 @@ class UserController extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
+        // Charger les relations nécessaires
+        $user->loadCount(['posts', 'followers', 'following']);
+
         return response()->json([
             'id' => $user->id,
             'username' => $user->username,
             'email' => $user->email,
             'bio' => $user->bio,
-            'avatar_url' => $user->avatar_url
+            'avatar_url' => $user->avatar_url,
+            'posts_count' => $user->posts_count,
+            'followers_count' => $user->followers_count,
+            'following_count' => $user->following_count
         ]);
     }
 

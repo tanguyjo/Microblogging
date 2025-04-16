@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
-import axios from "axios";
 
-const router = useRouter();
 const route = useRoute();
-
-const activeTab = ref("posts");
-const isOwnProfile = ref(true);
-const isFollowing = ref(false);
 const loading = ref(true);
+const isFollowing = ref(false);
 
 const userProfile = ref({
   username: "",
@@ -34,42 +29,28 @@ interface Post {
 }
 
 const posts = ref<Post[]>([]);
+const activeTab = ref("posts");
 
-async function fetchCurrentUserId(): Promise<string | null> {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  try {
-    const response = await fetch("http://localhost:8000/api/user", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return data.id;
+onMounted(async () => {
+  loading.value = true;
+  const username = route.params.username as string;
+  
+  if (username) {
+    const userData = await fetchUserProfile(username);
+    if (userData?.id) {
+      await Promise.all([
+        fetchUserPosts(userData.id),
+        checkFollowStatus(userData.id)
+      ]);
     }
-  } catch (error) {
-    console.error("Failed to fetch current user ID:", error);
   }
-  return null;
-}
 
-async function fetchUserProfile(userIdOrUsername: string, isId = false) {
+  loading.value = false;
+});
+
+async function fetchUserProfile(username: string) {
   try {
-    const endpoint = isId
-      ? `http://localhost:8000/api/user`
-      : `http://localhost:8000/api/users/${userIdOrUsername}`;
-
-    const headers: HeadersInit = {};
-    if (isId) {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    const response = await fetch(endpoint, { headers });
+    const response = await fetch(`http://localhost:8000/api/users/${username}`);
     if (response.ok) {
       const data = await response.json();
       userProfile.value = {
@@ -80,8 +61,9 @@ async function fetchUserProfile(userIdOrUsername: string, isId = false) {
         followersCount: data.followers_count || 0,
         followingCount: data.following_count || 0,
       };
-      console.log("User Profile:", userProfile.value);
       return data;
+    } else {
+      console.error("Error fetching user profile:", response.statusText);
     }
   } catch (error) {
     console.error("Error fetching user profile:", error);
@@ -104,9 +86,9 @@ async function fetchUserPosts(userId: string) {
       title: post.title,
       content: post.content,
       created_at: post.created_at,
-      likes: Array.isArray(post.likes) ? post.likes.length : 0,
-      comments: Array.isArray(post.comments) ? post.comments.length : 0,
-      author: post.user?.username ?? "",
+      likes: post.likes?.length ?? 0,
+      comments: post.comments?.length ?? 0,
+      author: post.author ?? "",
     }));
   } catch (error) {
     console.error("Error fetching posts:", error);
@@ -136,14 +118,14 @@ async function checkFollowStatus(userId: string) {
 
 async function toggleFollow() {
   const token = localStorage.getItem("token");
-  if (!token) return router.push("/login");
+  if (!token) return;
 
-  const profileId = route.params.username as string;
+  const userId = route.params.username as string;
   const method = isFollowing.value ? "DELETE" : "POST";
 
   try {
     const response = await fetch(
-      `http://localhost:8000/api/users/${profileId}/follow`,
+      `http://localhost:8000/api/users/${userId}/follow`,
       {
         method,
         headers: {
@@ -159,60 +141,7 @@ async function toggleFollow() {
     console.error("Error toggling follow:", error);
   }
 }
-
-async function logout() {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    localStorage.clear();
-    return router.push("/login");
-  }
-
-  try {
-    await axios.post("/api/logout", {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  } catch (err) {
-    console.error("Logout failed:", err);
-  }
-
-  localStorage.clear();
-  router.push("/login");
-}
-
-onMounted(async () => {
-  loading.value = true;
-  const currentUserId = await fetchCurrentUserId();
-  const username = route.params.username as string;
-
-  if (!username || username === userProfile.value.username) {
-    isOwnProfile.value = true;
-    if (currentUserId) {
-      await Promise.all([
-        fetchUserProfile(currentUserId, true),
-        fetchUserPosts(currentUserId)
-      ]);
-    }
-  } else {
-    isOwnProfile.value = false;
-    const userData = await fetchUserProfile(username);
-    if (userData?.id) {
-      await Promise.all([
-        fetchUserPosts(userData.id),
-        checkFollowStatus(userData.id)
-      ]);
-    }
-  }
-
-  loading.value = false;
-});
-
-
-
 </script>
-
-
 
 <template>
   <div class="md:flex">
@@ -241,24 +170,8 @@ onMounted(async () => {
           <span><strong>{{ userProfile.followingCount }}</strong> following</span>
         </div>
 
-        <!-- Edit & Logout (uniquement sur son propre profil) -->
-        <div v-if="isOwnProfile" class="flex justify-center items-center gap-4 mt-4 text-sm">
-          <RouterLink
-            to="/edit-profile"
-            class="text-darkviolet font-medium hover:underline"
-          >
-            Edit Profile
-          </RouterLink>
-          <button
-            @click="logout"
-            class="text-red-500 font-medium hover:underline bg-transparent border-none p-0"
-          >
-            Log out
-          </button>
-        </div>
-
-        <!-- Follow/Unfollow button (uniquement sur le profil des autres) -->
-        <div v-else class="flex justify-center mt-4">
+        <!-- Follow/Unfollow button -->
+        <div class="flex justify-center mt-4">
           <button
             @click="toggleFollow"
             class="px-4 py-2 rounded-full text-sm font-medium"
@@ -309,9 +222,7 @@ onMounted(async () => {
               ></div>
               <span
                 class="text-sm"
-                :class="
-                  activeTab === 'followers' ? 'text-black' : 'text-gray-500'
-                "
+                :class="activeTab === 'followers' ? 'text-black' : 'text-gray-500'"
               >
                 FOLLOWERS
               </span>
@@ -330,9 +241,7 @@ onMounted(async () => {
               ></div>
               <span
                 class="text-sm"
-                :class="
-                  activeTab === 'following' ? 'text-black' : 'text-gray-500'
-                "
+                :class="activeTab === 'following' ? 'text-black' : 'text-gray-500'"
               >
                 FOLLOWING
               </span>
@@ -351,14 +260,14 @@ onMounted(async () => {
           v-else-if="activeTab === 'followers'"
           class="text-center text-gray-500 py-12"
         >
-          <p>You have no followers yet.</p>
+          <p>No followers yet.</p>
         </div>
 
         <div
           v-else-if="activeTab === 'following'"
           class="text-center text-gray-500 py-12"
         >
-          <p>You're not following anyone yet.</p>
+          <p>Not following anyone yet.</p>
         </div>
       </section>
     </main>
@@ -366,4 +275,4 @@ onMounted(async () => {
 
   <!-- BottomNav -->
   <BottomNav class="block md:hidden" />
-</template>
+</template> 

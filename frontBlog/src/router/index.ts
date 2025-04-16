@@ -6,6 +6,7 @@ import SignUpView from "@/views/SignUpView.vue";
 import NewPostView from "@/views/NewPostView.vue";
 import ProfileView from "@/views/ProfileView.vue";
 import EditProfileView from "@/views/EditProfileView.vue";
+import UserProfileView from "@/views/UserProfileView.vue";
 
 const routes = [
   {
@@ -51,17 +52,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/profile/:username",
+    path: "/user/:username",
     name: "UserProfile",
-    component: ProfileView,
+    component: UserProfileView,
     meta: { requiresAuth: true }
-  },
-  {
-    path: "/profile/:username",
-    name: "UserProfile",
-    component: ProfileView,
-    meta: { requiresAuth: true }
-  },
+  }
 ];
 
 const router = createRouter({
