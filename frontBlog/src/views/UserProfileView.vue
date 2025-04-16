@@ -30,17 +30,21 @@ interface Post {
 
 const posts = ref<Post[]>([]);
 const activeTab = ref("posts");
+const followers = ref<{ id: number; username: string }[]>([]);
+const following = ref<{ id: number; username: string }[]>([]);
 
 onMounted(async () => {
   loading.value = true;
   const username = route.params.username as string;
-  
+
   if (username) {
     const userData = await fetchUserProfile(username);
     if (userData?.id) {
       await Promise.all([
         fetchUserPosts(userData.id),
-        checkFollowStatus(userData.id)
+        fetchFollowers(userData.id),
+        fetchFollowing(userData.id),
+        checkFollowStatus(userData.id),
       ]);
     }
   }
@@ -72,26 +76,54 @@ async function fetchUserProfile(username: string) {
 
 async function fetchUserPosts(userId: string) {
   try {
-    const response = await fetch(`http://localhost:8000/api/users/${userId}/posts`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+    const response = await fetch(
+      `http://localhost:8000/api/users/${userId}/posts`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
 
     if (!response.ok) throw new Error("Failed to load posts");
     const data = await response.json();
 
-    posts.value = data.map((post: any) => ({
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      created_at: post.created_at,
-      likes: post.likes?.length ?? 0,
-      comments: post.comments?.length ?? 0,
-      author: post.author ?? "",
-    }));
+    posts.value = await Promise.all(
+      data.map(async (post: any) => {
+        const likesList = await fetchpostlikes(post.id);
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          created_at: post.created_at,
+          likes: likesList?.length ?? 0,
+          comments: post.comments?.length ?? 0,
+          author: post.user?.username ?? "",
+        };
+      })
+    );
   } catch (error) {
     console.error("Error fetching posts:", error);
+  }
+}
+
+async function fetchpostlikes(postId: number) {
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/posts/${postId}/likes`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Post Likes:", data.length);
+      return data;
+    }
+  } catch (error) {
+    console.error("Error fetching post likes:", error);
   }
 }
 
@@ -113,6 +145,34 @@ async function checkFollowStatus(userId: string) {
     }
   } catch (error) {
     console.error("Error checking follow status:", error);
+  }
+}
+
+async function fetchFollowers(userId: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/users/${userId}/followers`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      followers.value = data.map((f: any) => f.follower);
+    }
+  } catch (error) {
+    console.error("Error fetching followers:", error);
+  }
+}
+
+async function fetchFollowing(userId: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/users/${userId}/following`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      following.value = data.map((f: any) => f.followed);
+    }
+  } catch (error) {
+    console.error("Error fetching following:", error);
   }
 }
 
@@ -165,9 +225,15 @@ async function toggleFollow() {
 
         <!-- Stats -->
         <div class="flex justify-center gap-6 mt-4 text-sm">
-          <span><strong>{{ userProfile.postsCount }}</strong> posts</span>
-          <span><strong>{{ userProfile.followersCount }}</strong> followers</span>
-          <span><strong>{{ userProfile.followingCount }}</strong> following</span>
+          <span
+            ><strong>{{ userProfile.postsCount }}</strong> posts</span
+          >
+          <span
+            ><strong>{{ userProfile.followersCount }}</strong> followers</span
+          >
+          <span
+            ><strong>{{ userProfile.followingCount }}</strong> following</span
+          >
         </div>
 
         <!-- Follow/Unfollow button -->
@@ -175,9 +241,13 @@ async function toggleFollow() {
           <button
             @click="toggleFollow"
             class="px-4 py-2 rounded-full text-sm font-medium"
-            :class="isFollowing ? 'bg-gray-200 text-gray-800' : 'bg-darkviolet text-white'"
+            :class="
+              isFollowing
+                ? 'bg-gray-200 text-gray-800'
+                : 'bg-darkviolet text-white'
+            "
           >
-            {{ isFollowing ? 'Unfollow' : 'Follow' }}
+            {{ isFollowing ? "Unfollow" : "Follow" }}
           </button>
         </div>
       </section>
@@ -185,7 +255,6 @@ async function toggleFollow() {
       <!-- Onglets -->
       <div class="sticky top-0 bg-white z-10">
         <div class="border-t border-black"></div>
-
         <div class="relative h-12">
           <div
             class="flex justify-around text-xs font-bold tracking-wide h-full bg-transparent"
@@ -195,14 +264,13 @@ async function toggleFollow() {
               class="flex flex-col items-center min-w-[90px] text-center bg-transparent"
             >
               <div
-                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5 transition-opacity duration-200"
+                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5"
                 :class="{
                   'opacity-100': activeTab === 'posts',
                   'opacity-0': activeTab !== 'posts',
                 }"
               ></div>
               <span
-                class="text-sm"
                 :class="activeTab === 'posts' ? 'text-black' : 'text-gray-500'"
               >
                 POSTS
@@ -214,15 +282,16 @@ async function toggleFollow() {
               class="flex flex-col items-center min-w-[90px] text-center bg-transparent"
             >
               <div
-                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5 transition-opacity duration-200"
+                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5"
                 :class="{
                   'opacity-100': activeTab === 'followers',
                   'opacity-0': activeTab !== 'followers',
                 }"
               ></div>
               <span
-                class="text-sm"
-                :class="activeTab === 'followers' ? 'text-black' : 'text-gray-500'"
+                :class="
+                  activeTab === 'followers' ? 'text-black' : 'text-gray-500'
+                "
               >
                 FOLLOWERS
               </span>
@@ -233,15 +302,16 @@ async function toggleFollow() {
               class="flex flex-col items-center min-w-[90px] text-center bg-transparent"
             >
               <div
-                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5 transition-opacity duration-200"
+                class="w-2.5 h-2.5 rounded-full bg-darkviolet mb-2 -mt-3.5"
                 :class="{
                   'opacity-100': activeTab === 'following',
                   'opacity-0': activeTab !== 'following',
                 }"
               ></div>
               <span
-                class="text-sm"
-                :class="activeTab === 'following' ? 'text-black' : 'text-gray-500'"
+                :class="
+                  activeTab === 'following' ? 'text-black' : 'text-gray-500'
+                "
               >
                 FOLLOWING
               </span>
@@ -252,27 +322,53 @@ async function toggleFollow() {
 
       <!-- Onglet actif -->
       <section class="mt-6">
+        <!-- Posts -->
         <div v-if="activeTab === 'posts'" class="space-y-8">
           <PostCard v-for="post in posts" :key="post.id" :post="post" />
         </div>
 
-        <div
-          v-else-if="activeTab === 'followers'"
-          class="text-center text-gray-500 py-12"
-        >
-          <p>No followers yet.</p>
+        <!-- Followers -->
+        <div v-else-if="activeTab === 'followers'" class="space-y-4">
+          <div
+            v-if="followers.length"
+            v-for="follower in followers"
+            :key="follower.id"
+            class="flex items-center gap-4"
+          >
+            <div
+              class="w-10 h-10 bg-darkviolet text-white rounded-full flex items-center justify-center font-title text-lg"
+            >
+              {{ follower.username.charAt(0).toUpperCase() }}
+            </div>
+            <span class="text-sm font-medium">@{{ follower.username }}</span>
+          </div>
+          <p v-else class="text-center text-gray-500 py-12">
+            No followers yet.
+          </p>
         </div>
 
-        <div
-          v-else-if="activeTab === 'following'"
-          class="text-center text-gray-500 py-12"
-        >
-          <p>Not following anyone yet.</p>
+        <!-- Following -->
+        <div v-else-if="activeTab === 'following'" class="space-y-4">
+          <div
+            v-if="following.length"
+            v-for="user in following"
+            :key="user.id"
+            class="flex items-center gap-4"
+          >
+            <div
+              class="w-10 h-10 bg-darkviolet text-white rounded-full flex items-center justify-center font-title text-lg"
+            >
+              {{ user.username.charAt(0).toUpperCase() }}
+            </div>
+            <span class="text-sm font-medium">@{{ user.username }}</span>
+          </div>
+          <p v-else class="text-center text-gray-500 py-12">
+            Not following anyone yet.
+          </p>
         </div>
       </section>
     </main>
-  </div>
 
-  <!-- BottomNav -->
-  <BottomNav class="block md:hidden" />
-</template> 
+    <BottomNav class="block md:hidden" />
+  </div>
+</template>
