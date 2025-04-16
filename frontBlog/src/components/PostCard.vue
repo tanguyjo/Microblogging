@@ -57,7 +57,12 @@ function formatDateTime(
 }
 
 function goToProfile(username: string) {
-  router.push(`/profile/${username}`);
+  const currentUsername = localStorage.getItem('username');
+  if (username === currentUsername) {
+    router.push('/profile');
+  } else {
+    router.push(`/user/${username}`);
+  }
 }
 </script>
 

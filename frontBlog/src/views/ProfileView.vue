@@ -62,8 +62,19 @@ async function fetchCurrentUserId(): Promise<string | null> {
 
 async function fetchUserProfile(userIdOrUsername: string, isId = false) {
   try {
-    const endpoint = `http://localhost:8000/api/users/${userIdOrUsername}`;
-    const response = await fetch(endpoint);
+    const endpoint = isId
+      ? `http://localhost:8000/api/user`
+      : `http://localhost:8000/api/users/${userIdOrUsername}`;
+
+    const headers: HeadersInit = {};
+    if (isId) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    const response = await fetch(endpoint, { headers });
     if (response.ok) {
       const data = await response.json();
       userProfile.value = {
@@ -71,9 +82,9 @@ async function fetchUserProfile(userIdOrUsername: string, isId = false) {
         username: data.username,
         bio: data.bio || "No bio yet",
         avatar: data.avatar_url || "",
-        postsCount: data.posts?.length ?? 0,
-        followersCount: data.followers?.length ?? 0,
-        followingCount: data.following?.length ?? 0,
+        postsCount: data.posts_count || 0,
+        followersCount: data.followers_count || 0,
+        followingCount: data.following_count || 0,
       };
 
       // charger la liste des followers et following

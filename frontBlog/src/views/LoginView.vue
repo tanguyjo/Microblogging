@@ -77,8 +77,9 @@ const handleLogin = async () => {
       form.value
     );
 
-    // Stocker le token dans le localStorage
+    // Stocker le token et le nom d'utilisateur dans le localStorage
     localStorage.setItem("token", response.data.token);
+    localStorage.setItem("username", response.data.user.username);
 
     // Rediriger vers la page d'accueil
     router.push("/");
