@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { ref,onMounted } from "vue";
-import { useRouter,useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
 import axios from "axios";
 
 const router = useRouter();
-const route = useRoute();
 const activeTab = ref("posts");
-const isOwnProfile = ref(true);
 
 const user = ref<any>(null); // Utilisateur connecté
 const followers = ref([]);
@@ -17,10 +15,7 @@ const following = ref([]);
 
 async function logout() {
   try {
-    const username = route.params.username;
-  if (username) {
-    
-    isOwnProfile.value = false;
+
     const token = localStorage.getItem('token');
     console.log('Token actuel:', token);
 
@@ -118,6 +113,7 @@ onMounted(async () => {
     const data = await postsResponse.json();
     console.log("Posts récupérés:", data);
 
+
     posts.value = data.map((post: Post) => ({
       id: post.id,
       title: post.title,
@@ -146,6 +142,8 @@ onMounted(async () => {
 
     if (!userResponse.ok) throw new Error("Non authentifié");
     const userData = await userResponse.json();
+    user.value = userData;
+    console.log("Utilisateur connecté:", userData);
 
     const fullResponse = await fetch(`http://localhost:8000/api/users/${userData.id}`, {
       headers: {
@@ -198,8 +196,8 @@ console.log(posts); // Vérification de la récupération des posts
           <span><strong>{{ following.length }}</strong> following</span>
         </div>
 
-        <!-- Edit & Logout (uniquement sur son propre profil) -->
-        <div v-if="isOwnProfile" class="flex justify-center items-center gap-4 mt-4 text-sm">
+        <!-- Edit & Logout -->
+        <div class="flex justify-center items-center gap-4 mt-4 text-sm">
           <RouterLink
             to="/edit-profile"
             class="text-darkviolet font-medium hover:underline"
@@ -211,17 +209,6 @@ console.log(posts); // Vérification de la récupération des posts
             class="text-red-500 font-medium hover:underline bg-transparent border-none p-0"
           >
             Log out
-          </button>
-        </div>
-
-        <!-- Follow/Unfollow button (uniquement sur le profil des autres) -->
-        <div v-else class="flex justify-center mt-4">
-          <button
-            @click="toggleFollow"
-            class="px-4 py-2 rounded-full text-sm font-medium"
-            :class="isFollowing ? 'bg-gray-200 text-gray-800' : 'bg-darkviolet text-white'"
-          >
-            {{ isFollowing ? 'Unfollow' : 'Follow' }}
           </button>
         </div>
       </section>
@@ -308,7 +295,8 @@ console.log(posts); // Vérification de la récupération des posts
           v-else-if="activeTab === 'followers'"
           class="text-center text-gray-500 py-12"
         >
-          <p>You have no followers yet.</p>
+          <p>You're not following anyone yet.</p>
+          <p>Follow some users to see their posts here.</p>
         </div>
 
         <div
