@@ -39,6 +39,7 @@
 
     <!-- Icône : recherche -->
     <button
+      @click="emit('search-click')"
       aria-label="Search"
       class="p-2 bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
     >
@@ -105,4 +106,8 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+
+const emit = defineEmits<{
+  (e: 'search-click'): void;
+}>();
 </script>
