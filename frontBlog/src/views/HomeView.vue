@@ -43,7 +43,8 @@ async function fetchFollowingUsers() {
     });
     if (response.ok) {
       const data = await response.json();
-      followingUsers.value = data.map((user: any) => user.username);
+      // Les données contiennent un tableau d'objets avec une relation "followed"
+      followingUsers.value = data.map((follow: any) => follow.followed.username);
       console.log("Following users loaded:", followingUsers.value);
     }
   } catch (error) {
@@ -105,7 +106,7 @@ const filteredPosts = computed(() => {
   
   // Filtrer par abonnements si activé
   if (showOnlyFollowing.value) {
-    console.log('Filtering by following users...');
+    console.log('Filtering by following users:', followingUsers.value);
     filtered = filtered.filter(post => {
       const isFollowing = followingUsers.value.includes(post.author);
       console.log(`Post author: ${post.author}, Is following: ${isFollowing}`);
