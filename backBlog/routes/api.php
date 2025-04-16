@@ -28,6 +28,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 
 // 🔓 Routes publiques
 Route::apiResource('posts', PostController::class)->only(['index', 'show']);
+Route::get('posts/search', [PostController::class, 'search']);
 Route::apiResource('users', UserController::class)->only(['index', 'show']);
 Route::apiResource('hashtags', HashtagController::class)->only(['index', 'show']);
 

@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+
+const emit = defineEmits<{
+  (e: 'search-click'): void;
+}>();
 </script>
 
 <template>
@@ -43,7 +47,8 @@ import { RouterLink } from 'vue-router';
 
     <!-- Icône : Search -->
     <button
-      class="flex flex-col items-center gap-1 text-xs text-darkviolet bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+      @click="emit('search-click')"
+      class="flex flex-col items-center gap-1 text-xs text-darkviolet bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent w-full"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -2,8 +2,9 @@
 import PostCard from "@/components/PostCard.vue";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
+import SearchPopup from "@/components/SearchPopup.vue";
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 // import PostContent from "@/components/PostContent.vue"; // Pour vérification du composant
 
 interface Post {
@@ -18,8 +19,13 @@ interface Post {
   author: string;
   likes: number;
   comments: number;
+  hashtags?: string[];
 }
+
 const posts = ref<Post[]>([]);
+const selectedHashtag = ref<string | null>(null);
+const availableHashtags = ref<string[]>([]);
+const isSearchOpen = ref(false);
 
 // Récupération des posts depuis l'API
 onMounted(async () => {
@@ -42,9 +48,18 @@ onMounted(async () => {
         likes: post.likes,
         comments: post.comments,
         author: post.author || "",
-        tags: [],
+        hashtags: post.hashtags || [],
       };
     });
+
+    // Extraire tous les hashtags uniques
+    const allHashtags = new Set<string>();
+    posts.value.forEach(post => {
+      if (post.hashtags) {
+        post.hashtags.forEach(tag => allHashtags.add(tag));
+      }
+    });
+    availableHashtags.value = Array.from(allHashtags);
 
     console.log("Posts transformés:", posts.value);
   } catch (error) {
@@ -52,14 +67,21 @@ onMounted(async () => {
   }
 });
 
-console.log(posts); // Vérification de la récupération des posts
+// Filtrer les posts par hashtag
+const filteredPosts = computed(() => {
+  if (!selectedHashtag.value) return posts.value;
+  return posts.value.filter(post => 
+    post.hashtags?.includes(selectedHashtag.value!)
+  );
+});
 
-function formatDateTime(
-  dateString: string,
-  mode: "full" | "short" = "full"
-): string {
+function handleHashtagSelect(hashtag: string | null) {
+  selectedHashtag.value = hashtag;
+  isSearchOpen.value = false;
+}
+
+function formatDateTime(dateString: string, mode: "full" | "short" = "full"): string {
   const date = new Date(dateString);
-
 
   if (isNaN(date.getTime())) {
     console.error('Date invalide:', dateString);
@@ -74,30 +96,42 @@ function formatDateTime(
     minute: '2-digit',
     hour12: false,
   }).format(date);
-
 }
 </script>
 
 <template>
   <div class="md:flex">
     <!-- SideNav (Desktop uniquement) -->
-    <SideNav class="hidden md:block w-20 shrink-0" />
+    <SideNav 
+      class="hidden md:block w-20 shrink-0"
+      @search-click="isSearchOpen = true"
+    />
 
     <!-- Contenu principal -->
     <main class="w-full px-4 pt-6 pb-20 max-w-4xl mx-auto font-sans">
       <!-- Header -->
-      <h2
-        class="text-center text-xl font-semibold mb-6 font-sans relative text-black"
-      >
+      <h2 class="text-center text-xl font-semibold mb-6 font-sans relative text-black">
         <span class="block w-4 h-1 bg-purple-600 mx-auto mb-1"></span>
-        Latest
+        {{ selectedHashtag ? `#${selectedHashtag}` : 'Latest' }}
       </h2>
 
       <!-- Liste des posts -->
-      <PostCard v-for="post in posts" :key="post.id" :post="post" />
+      <PostCard v-for="post in filteredPosts" :key="post.id" :post="post" />
     </main>
   </div>
 
   <!-- BottomNav (Mobile uniquement) -->
-  <BottomNav class="block md:hidden" />
+  <BottomNav 
+    class="block md:hidden"
+    @search-click="isSearchOpen = true"
+  />
+
+  <!-- Search Popup -->
+  <SearchPopup
+    :is-open="isSearchOpen"
+    :selected-hashtag="selectedHashtag"
+    :available-hashtags="availableHashtags"
+    @close="isSearchOpen = false"
+    @select="handleHashtagSelect"
+  />
 </template>
