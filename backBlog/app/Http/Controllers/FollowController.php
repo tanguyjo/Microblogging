@@ -53,4 +53,28 @@ class FollowController extends Controller
     {
         return $user->following()->with('followed')->get();
     }
+    
+    
+    public function followByUsername($username)
+{
+    $follower = Auth::user();
+    $followed = User::where('username', $username)->firstOrFail();
+
+    // Empêche de suivre deux fois
+    if (!$follower->following()->where('followed_id', $followed->id)->exists()) {
+        $follower->following()->attach($followed->id);
+    }
+
+    return response()->json(['message' => 'Followed successfully']);
+}
+
+public function unfollowByUsername($username)
+    {
+        $follower = Auth::user();
+        $followed = User::where('username', $username)->firstOrFail();
+
+        $follower->following()->detach($followed->id);
+
+        return response()->json(['message' => 'Unfollowed successfully']);
+    }
 }
