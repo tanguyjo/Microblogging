@@ -25,7 +25,6 @@ Une plateforme de microblogging moderne avec une API RESTful et une interface ut
 - Vite
 - Tailwind CSS
 - Vue Router
-- Pinia pour la gestion d'état
 
 ## 📦 Installation
 
@@ -128,14 +127,13 @@ Microblogging/
     ├── src/
     │   ├── components/      # Composants Vue
     │   ├── views/          # Pages
-    │   ├── stores/         # État Pinia
     │   └── services/       # Services API
     └── public/             # Assets statiques
 ```
 
 ## 🔐 Authentification
 
-L'API utilise Laravel Sanctum pour l'authentification. Les tokens sont gérés via des cookies sécurisés.
+L'API utilise Laravel Sanctum pour l'authentification. Les tokens sont stockés dans le local storage.
 
 ### Endpoints d'authentification
 - `POST /api/register` - Inscription
@@ -208,10 +206,10 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 ## 👥 Auteurs
 
-- [Votre Nom] 
-- [Votre Nom] 
-- [Votre Nom] 
-- [Votre Nom] 
+- Théo  
+- Alex 
+- Tanguy 
+- Neelab 
 
 ## 🙏 Remerciements
 
