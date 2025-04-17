@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import BottomNav from "@/components/Navigation/BottomNav.vue";
 import SideNav from "@/components/Navigation/SideNav.vue";
 import PostCard from "@/components/PostCard.vue";
 
 const route = useRoute();
+const router = useRouter();
 const loading = ref(true);
 const isFollowing = ref(false);
 
@@ -44,7 +45,7 @@ onMounted(async () => {
         fetchUserPosts(userData.id),
         fetchFollowers(userData.id),
         fetchFollowing(userData.id),
-        checkFollowStatus(userData.id),
+        checkFollowStatus(username),
       ]);
     }
   }
@@ -54,7 +55,17 @@ onMounted(async () => {
 
 async function fetchUserProfile(username: string) {
   try {
-    const response = await fetch(`http://localhost:8000/api/users/${username}`);
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`http://localhost:8000/api/users/${username}`, {
+      headers,
+    });
     if (response.ok) {
       const data = await response.json();
       userProfile.value = {
@@ -127,12 +138,12 @@ async function fetchpostlikes(postId: number) {
   }
 }
 
-async function checkFollowStatus(userId: string) {
+async function checkFollowStatus(username: string) {
   const token = localStorage.getItem("token");
   if (!token) return;
   try {
     const response = await fetch(
-      `http://localhost:8000/api/users/${userId}/follow-status`,
+      `http://localhost:8000/api/users/${username}/follow-status`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -142,6 +153,8 @@ async function checkFollowStatus(userId: string) {
     if (response.ok) {
       const data = await response.json();
       isFollowing.value = data.is_following;
+    } else {
+      console.error("Error checking follow status:", response.statusText);
     }
   } catch (error) {
     console.error("Error checking follow status:", error);
@@ -150,8 +163,17 @@ async function checkFollowStatus(userId: string) {
 
 async function fetchFollowers(userId: string) {
   try {
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(
-      `http://localhost:8000/api/users/${userId}/followers`
+      `http://localhost:8000/api/users/${userId}/followers`,
+      { headers }
     );
     if (response.ok) {
       const data = await response.json();
@@ -164,8 +186,17 @@ async function fetchFollowers(userId: string) {
 
 async function fetchFollowing(userId: string) {
   try {
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(
-      `http://localhost:8000/api/users/${userId}/following`
+      `http://localhost:8000/api/users/${userId}/following`,
+      { headers }
     );
     if (response.ok) {
       const data = await response.json();
@@ -178,24 +209,42 @@ async function fetchFollowing(userId: string) {
 
 async function toggleFollow() {
   const token = localStorage.getItem("token");
-  if (!token) return;
+  if (!token) {
+    router.push("/login");
+    return;
+  }
 
-  const userId = route.params.username as string;
-  const method = isFollowing.value ? "DELETE" : "POST";
+  const username = route.params.username as string;
 
   try {
     const response = await fetch(
-      `http://localhost:8000/api/users/${userId}/follow`,
+      `http://localhost:8000/api/users/${username}/follow`,
       {
-        method,
+        method: isFollowing.value ? "DELETE" : "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       }
     );
+
     if (response.ok) {
       isFollowing.value = !isFollowing.value;
       userProfile.value.followersCount += isFollowing.value ? 1 : -1;
+      
+      // Recharger les followers après le changement
+      if (userProfile.value.username) {
+        const userData = await fetchUserProfile(userProfile.value.username);
+        if (userData?.id) {
+          await Promise.all([
+            fetchFollowers(userData.id),
+            fetchFollowing(userData.id),
+          ]);
+        }
+      }
+    } else {
+      const errorData = await response.json();
+      console.error("Error toggling follow:", errorData.error || response.statusText);
     }
   } catch (error) {
     console.error("Error toggling follow:", error);
