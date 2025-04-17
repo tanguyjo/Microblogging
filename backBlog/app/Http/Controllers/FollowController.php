@@ -56,25 +56,43 @@ class FollowController extends Controller
     
     
     public function followByUsername($username)
-{
-    $follower = Auth::user();
-    $followed = User::where('username', $username)->firstOrFail();
-
-    // Empêche de suivre deux fois
-    if (!$follower->following()->where('followed_id', $followed->id)->exists()) {
-        $follower->following()->attach($followed->id);
-    }
-
-    return response()->json(['message' => 'Followed successfully']);
-}
-
-public function unfollowByUsername($username)
     {
         $follower = Auth::user();
         $followed = User::where('username', $username)->firstOrFail();
 
-        $follower->following()->detach($followed->id);
+        if ($follower->id === $followed->id) {
+            return response()->json(['error' => 'You cannot follow yourself.'], 422);
+        }
+
+        $follow = Follow::firstOrCreate([
+            'follower_id' => $follower->id,
+            'followed_id' => $followed->id,
+        ]);
+
+        return response()->json(['message' => 'Followed successfully']);
+    }
+
+    public function unfollowByUsername($username)
+    {
+        $follower = Auth::user();
+        $followed = User::where('username', $username)->firstOrFail();
+
+        Follow::where('follower_id', $follower->id)
+            ->where('followed_id', $followed->id)
+            ->delete();
 
         return response()->json(['message' => 'Unfollowed successfully']);
+    }
+
+    public function followStatus($username)
+    {
+        $follower = Auth::user();
+        $followed = User::where('username', $username)->firstOrFail();
+
+        $isFollowing = $follower->following()
+            ->where('followed_id', $followed->id)
+            ->exists();
+
+        return response()->json(['is_following' => $isFollowing]);
     }
 }

@@ -40,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('follows', FollowController::class)->only(['store', 'destroy']);
     Route::post('/users/{username}/follow', [FollowController::class, 'followByUsername']);
     Route::delete('/users/{username}/follow', [FollowController::class, 'unfollowByUsername']);
+    Route::get('/users/{username}/follow-status', [FollowController::class, 'followStatus']);
     
     // User profile routes
     Route::get('/user', [UserController::class, 'profile']);
