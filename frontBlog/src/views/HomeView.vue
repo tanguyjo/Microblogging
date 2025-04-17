@@ -115,7 +115,7 @@ const filteredPosts = computed(() => {
   }
   
   console.log('Filtered posts count:', filtered.length);
-  return filtered;
+  return filtered.slice().sort((a,b)=> new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 });
 
 function handleHashtagSelect(hashtag: string | null) {
