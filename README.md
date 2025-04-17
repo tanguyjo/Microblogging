@@ -22,7 +22,6 @@ Une plateforme de microblogging moderne avec une API RESTful et une interface ut
 ### Frontend (Vue.js)
 - Vue 3
 - TypeScript
-- Vite
 - Tailwind CSS
 - Vue Router
 
@@ -33,7 +32,6 @@ Une plateforme de microblogging moderne avec une API RESTful et une interface ut
 - Composer
 - Node.js 18+
 - PostgreSQL
-- ServBay (pour le développement local)
 
 ### Backend
 
@@ -206,9 +204,9 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 ## 👥 Auteurs
 
-- Théo  
-- Alex 
-- Tanguy 
+- TheoBlaum
+- alex-adkklk 
+- tanguyjo
 - Neelab 
 
 ## 🙏 Remerciements
